@@ -2,10 +2,16 @@
 //
 
 #include <iostream>
+#define WIN32_LEAN_AND_MEAN 
+#include <windows.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <process.h>			//_beginthreadex() e _endthreadex()
+#include <conio.h>				//_getch
 
 int main()
 {
-    std::cout << "Hello World!\n";
+    std::cout << "Extração de Petroleo!\n";
 }
 
 // Executar programa: Ctrl + F5 ou Menu Depurar > Iniciar Sem Depuração
