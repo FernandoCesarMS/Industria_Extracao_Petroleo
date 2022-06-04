@@ -1,6 +1,3 @@
-// Industria_Extracao_Petroleo.cpp : Este arquivo contém a função 'main'. A execução do programa começa e termina ali.
-//
-
 #include <iostream>
 #define WIN32_LEAN_AND_MEAN 
 #include <windows.h>
@@ -8,19 +5,136 @@
 #include <stdlib.h>
 #include <process.h>			//_beginthreadex() e _endthreadex()
 #include <conio.h>				//_getch
+#include <locale>
+
+#define	ESC				0x1B			//Tecla para encerrar o programa
+
+void* comunicacaoDados();
+void* retiradaDadosOtimizacao();
+void* retiradaDadosProcesso();
+void* retiradaAlarme();
+void* exibicaoDadosOtimizacao();
+void* exibicaoDadosProcesso();
+void* exibicaoAlarme();
+void* limpaJanelaConsoleExibicaoAlarmes();
+void* encerraTarefas();
 
 int main()
 {
-    std::cout << "Extração de Petroleo!\n";
+    char caractereDigitado;
+    //Leitura dos caractéres do teclado
+    do {
+        caractereDigitado = _getch(); //Lê um caractere
+        switch (caractereDigitado) {
+            case ('c'):
+                comunicacaoDados();
+                break;
+            case ('o'):
+                retiradaDadosOtimizacao();
+                break;
+            case ('p'):
+                retiradaDadosProcesso();
+                break;
+            case ('a'):
+                retiradaAlarme();
+                break;
+            case ('t'):
+                exibicaoDadosOtimizacao();
+                break;
+            case ('r'):
+                exibicaoDadosProcesso();
+                break;
+            case ('l'):
+                exibicaoAlarme();
+                break;
+            case ('z'):
+                limpaJanelaConsoleExibicaoAlarmes();
+                break;
+            case (ESC):
+                encerraTarefas();
+                break;
+            default:
+                std::cout << "Caractere invalido" << std::endl;
+        }
+    } while (caractereDigitado != ESC);
+
+    // TODO: Lista Circular em Memória
+    // TODO: Tarefas de retirada
+    // TODO: Tarefa de comunicação de Dados
+    // TODO: Tarefas de exibição
+
+    std::cout << "Programa encerrado" << std::endl;
 }
 
-// Executar programa: Ctrl + F5 ou Menu Depurar > Iniciar Sem Depuração
-// Depurar programa: F5 ou menu Depurar > Iniciar Depuração
+// THREADS SECUNDARIAS
+// Atencao para o formato conforme o exemplo abaixo!
+void* comunicacaoDados() {
+    std::cout << "Caractere C digitado" << std::endl;
+    // O comando "return" abaixo é desnecessário, mas presente aqui para compatibilidade
+    // com o Visual Studio da Microsoft
+    return (void*)NULL;
+}
 
-// Dicas para Começar: 
-//   1. Use a janela do Gerenciador de Soluções para adicionar/gerenciar arquivos
-//   2. Use a janela do Team Explorer para conectar-se ao controle do código-fonte
-//   3. Use a janela de Saída para ver mensagens de saída do build e outras mensagens
-//   4. Use a janela Lista de Erros para exibir erros
-//   5. Ir Para o Projeto > Adicionar Novo Item para criar novos arquivos de código, ou Projeto > Adicionar Item Existente para adicionar arquivos de código existentes ao projeto
-//   6. No futuro, para abrir este projeto novamente, vá para Arquivo > Abrir > Projeto e selecione o arquivo. sln
+void* retiradaDadosOtimizacao() {
+    std::cout << "Caractere O digitado" << std::endl;
+
+    // O comando "return" abaixo é desnecessário, mas presente aqui para compatibilidade
+    // com o Visual Studio da Microsoft
+    return (void*)NULL;
+}
+
+void* retiradaDadosProcesso() {
+    std::cout << "Caractere P digitado" << std::endl;
+
+    // O comando "return" abaixo é desnecessário, mas presente aqui para compatibilidade
+    // com o Visual Studio da Microsoft
+    return (void*)NULL;
+}
+
+void* retiradaAlarme() {
+    std::cout << "Caractere A digitado" << std::endl;
+
+    // O comando "return" abaixo é desnecessário, mas presente aqui para compatibilidade
+    // com o Visual Studio da Microsoft
+    return (void*)NULL;
+}
+
+void* exibicaoDadosOtimizacao() {
+    std::cout << "Caractere T digitado" << std::endl;
+
+    // O comando "return" abaixo é desnecessário, mas presente aqui para compatibilidade
+    // com o Visual Studio da Microsoft
+    return (void*)NULL;
+}
+
+void* exibicaoDadosProcesso() {
+    std::cout << "Caractere R digitado" << std::endl;
+
+    // O comando "return" abaixo é desnecessário, mas presente aqui para compatibilidade
+    // com o Visual Studio da Microsoft
+    return (void*)NULL;
+}
+
+void* exibicaoAlarme() {
+    std::cout << "Caractere L digitado" << std::endl;
+
+    // O comando "return" abaixo é desnecessário, mas presente aqui para compatibilidade
+    // com o Visual Studio da Microsoft
+    return (void*)NULL;
+}
+
+void* limpaJanelaConsoleExibicaoAlarmes() {
+    std::cout << "Caractere Z digitado" << std::endl;
+
+    // O comando "return" abaixo é desnecessário, mas presente aqui para compatibilidade
+    // com o Visual Studio da Microsoft
+    return (void*)NULL;
+}
+
+void* encerraTarefas() {
+    std::cout << "Caractere ESC digitado" << std::endl;
+
+    // O comando "return" abaixo é desnecessário, mas presente aqui para compatibilidade
+    // com o Visual Studio da Microsoft
+    return (void*)NULL;
+}
