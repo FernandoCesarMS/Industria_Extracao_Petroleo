@@ -68,7 +68,7 @@ int listSize = 0;
 int listSizeRetiradaOtimizacao = 0;
 
 int onOffComunicacao = ATIVADO;
-int onOffRetiradaOtimizacao = DESATIVADO;
+int onOffRetiradaOtimizacao = ATIVADO;
 int onOffRetiradaProcesso = ATIVADO;
 int onOffRetiradaAlarme = DESATIVADO;
 int onOffExibicaoOtimizacao = DESATIVADO;
@@ -112,11 +112,11 @@ int main() {
     hEventComunicacao = CreateEvent(NULL, FALSE, FALSE, L"Evento Comunicacao");
     hEventRetiradaOtimizacao = CreateEvent(NULL, FALSE, FALSE, L"Evento retirada de dados de otimização");
     hEventRetiradaProcesso = CreateEvent(NULL, FALSE, FALSE, L"Evento retirada de dados de processo");
-    /*hEventRetiradaAlarmes = CreateEvent(NULL, FALSE, FALSE, L"Evento retirada de dados de alarmes");
+    hEventRetiradaAlarmes = CreateEvent(NULL, FALSE, FALSE, L"Evento retirada de dados de alarmes");
     hEventExibicaoOtimizacao = CreateEvent(NULL, FALSE, FALSE, L"Evento exibição de dados de otimização");
     hEventExibicaoProcesso = CreateEvent(NULL, FALSE, FALSE, L"Evento exibição de dados de processo");
     hEventExibicaoAlarmes = CreateEvent(NULL, FALSE, FALSE, L"Evento exibição de alarmes");
-    hEventLimpaConsole = CreateEvent(NULL, FALSE, FALSE, L"Evento de limpar o console");*/
+    /*hEventLimpaConsole = CreateEvent(NULL, FALSE, FALSE, L"Evento de limpar o console"); */
     hEventEsc = CreateEvent(NULL, FALSE, FALSE, L"EscEvento");
 
     for (int i = 0; i < 3; i++) {
@@ -146,6 +146,42 @@ int main() {
         0,
         (CAST_FUNCTION)WaitRetiradaProcessoEvent,
         (LPVOID)4,
+        0,
+        (CAST_LPDWORD)&dwThreadID
+    );
+
+    hThreads[5] = (HANDLE)_beginthreadex(
+        NULL,
+        0,
+        (CAST_FUNCTION)WaitRetiradaAlarmeEvent,
+        (LPVOID)5,
+        0,
+        (CAST_LPDWORD)&dwThreadID
+    );
+
+    hThreads[6] = (HANDLE)_beginthreadex(
+        NULL,
+        0,
+        (CAST_FUNCTION)WaitExibicaoOtimizacaoEvent,
+        (LPVOID)6,
+        0,
+        (CAST_LPDWORD)&dwThreadID
+    );
+
+    hThreads[7] = (HANDLE)_beginthreadex(
+        NULL,
+        0,
+        (CAST_FUNCTION)WaitExibicaoProcessoEvent,
+        (LPVOID)7,
+        0,
+        (CAST_LPDWORD)&dwThreadID
+    );
+
+    hThreads[8] = (HANDLE)_beginthreadex(
+        NULL,
+        0,
+        (CAST_FUNCTION)WaitExibicaoAlarmesEvent,
+        (LPVOID)8,
         0,
         (CAST_LPDWORD)&dwThreadID
     );
@@ -201,10 +237,22 @@ int main() {
                 break;
             }
             case ('t'):
-                exibicaoDadosOtimizacao();
+                PulseEvent(hEventExibicaoOtimizacao);
+                if (onOffExibicaoOtimizacao == DESATIVADO) {
+                    onOffExibicaoOtimizacao = ATIVADO;
+                }
+                else {
+                    onOffExibicaoOtimizacao = DESATIVADO;
+                }
                 break;
             case ('a'):
-                retiradaAlarme();
+                PulseEvent(hEventRetiradaAlarmes);
+                if (onOffRetiradaAlarme == DESATIVADO) {
+                    onOffRetiradaAlarme = ATIVADO;
+                }
+                else {
+                    onOffRetiradaAlarme = DESATIVADO;
+                }
                 break;
             case ('p'):
                 PulseEvent(hEventRetiradaProcesso);
@@ -216,10 +264,22 @@ int main() {
                 }
                 break;
             case ('r'):
-                exibicaoDadosProcesso();
+                PulseEvent(hEventExibicaoProcesso);
+                if (onOffExibicaoProcesso == DESATIVADO) {
+                    onOffExibicaoProcesso = ATIVADO;
+                }
+                else {
+                    onOffExibicaoProcesso = DESATIVADO;
+                }
                 break;
             case ('l'):
-                exibicaoAlarme();
+                PulseEvent(hEventExibicaoAlarmes);
+                if (onOffExibicaoAlarmes == DESATIVADO) {
+                    onOffExibicaoAlarmes = ATIVADO;
+                }
+                else {
+                    onOffExibicaoAlarmes = DESATIVADO;
+                }
                 break;
             case ('z'):
                 limpaJanelaConsoleExibicaoAlarmes();
@@ -234,7 +294,7 @@ int main() {
     } while (caractereDigitado != ESC);
        
     dwRet = WaitForMultipleObjects(3, hThreads, TRUE, INFINITE);
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < 9; i++) {
         GetExitCodeThread(hThreads[i], &dwExitCode);
         CloseHandle(hThreads[i]);
     }
@@ -243,6 +303,10 @@ int main() {
     CloseHandle(hEventEsc);
     CloseHandle(hEventRetiradaOtimizacao);
     CloseHandle(hEventRetiradaProcesso);
+    CloseHandle(hEventRetiradaAlarmes);
+    CloseHandle(hEventExibicaoOtimizacao);
+    CloseHandle(hEventExibicaoProcesso);
+    CloseHandle(hEventExibicaoAlarmes);
     CloseHandle(hMutexID);
     CloseHandle(hMutexCOUT);
     // TODO: Tarefas de retirada
@@ -327,6 +391,81 @@ DWORD WINAPI WaitRetiradaProcessoEvent(LPVOID id) {
     return (0);
 }
 
+DWORD WINAPI WaitRetiradaAlarmeEvent(LPVOID id) {
+    HANDLE Events[2] = { hEventRetiradaAlarmes, hEventEsc };
+    DWORD ret;
+    int nTipoEvento;
+
+    do {
+        retiradaAlarme();
+        printInPrincipalScreen(string_format("Thread %d de retirada de dados de alarmes foi bloqueada! Aguardando desbloqueamento", id));
+        ret = WaitForMultipleObjects(2, Events, FALSE, INFINITE);
+        nTipoEvento = ret - WAIT_OBJECT_0;
+    } while (nTipoEvento == 0);
+
+    printInPrincipalScreen(string_format("Thread %d terminando", id));
+
+    _endthreadex(0);
+
+    return (0);
+}
+
+DWORD WINAPI WaitExibicaoOtimizacaoEvent(LPVOID id) {
+    HANDLE Events[2] = { hEventExibicaoOtimizacao, hEventEsc };
+    DWORD ret;
+    int nTipoEvento;
+
+    do {
+        exibicaoDadosOtimizacao();
+        printInPrincipalScreen(string_format("Thread %d de exibição de otimização foi bloqueada! Aguardando desbloqueamento", id));
+        ret = WaitForMultipleObjects(2, Events, FALSE, INFINITE);
+        nTipoEvento = ret - WAIT_OBJECT_0;
+    } while (nTipoEvento == 0);
+
+    printInPrincipalScreen(string_format("Thread %d terminando", id));
+
+    _endthreadex(0);
+
+    return (0);
+}
+
+DWORD WINAPI WaitExibicaoProcessoEvent(LPVOID id) {
+    HANDLE Events[2] = { hEventExibicaoProcesso, hEventEsc };
+    DWORD ret;
+    int nTipoEvento;
+
+    do {
+        exibicaoDadosProcesso();
+        printInPrincipalScreen(string_format("Thread %d de exibição de processo foi bloqueada! Aguardando desbloqueamento", id));
+        ret = WaitForMultipleObjects(2, Events, FALSE, INFINITE);
+        nTipoEvento = ret - WAIT_OBJECT_0;
+    } while (nTipoEvento == 0);
+
+    printInPrincipalScreen(string_format("Thread %d terminando", id));
+
+    _endthreadex(0);
+
+    return (0);
+}
+
+DWORD WINAPI WaitExibicaoAlarmesEvent(LPVOID id) {
+    HANDLE Events[2] = { hEventExibicaoAlarmes, hEventEsc };
+    DWORD ret;
+    int nTipoEvento;
+
+    do {
+        exibicaoAlarme();
+        printInPrincipalScreen(string_format("Thread %d de exibição de alarmes foi bloqueada! Aguardando desbloqueamento", id));
+        ret = WaitForMultipleObjects(2, Events, FALSE, INFINITE);
+        nTipoEvento = ret - WAIT_OBJECT_0;
+    } while (nTipoEvento == 0);
+
+    printInPrincipalScreen(string_format("Thread %d terminando", id));
+
+    _endthreadex(0);
+
+    return (0);
+}
 
 int len(std::string str){
     int length = 0;
@@ -532,8 +671,6 @@ void removerDado(std::string data) {
     }
 }
 
-// THREADS SECUNDARIAS
-
 void* retiradaDadosOtimizacao() {
     DWORD ret;
     Sleep(1000);
@@ -590,7 +727,27 @@ void* retiradaDadosProcesso() {
 }
 
 void* retiradaAlarme() {
-    std::cout << "Caractere A digitado" << std::endl;
+    DWORD ret;
+    Sleep(1000);
+    struct Node* ponteiroListRetiradaAlarme = first;
+    if (onOffRetiradaAlarme) {
+        if (ponteiroListRetiradaAlarme != NULL) {
+            printInPrincipalScreen("Retirada de dados de alarme desbloqueada");
+            do {
+                if (ponteiroListRetiradaAlarme->info.length() == 27) {
+                    std::cout << "Alarme retirado -> " << ponteiroListRetiradaAlarme->info << std::endl;
+                    removerDado(ponteiroListRetiradaAlarme->info);
+                }
+
+                if (ponteiroListRetiradaAlarme->next != first) {
+                    ponteiroListRetiradaAlarme = ponteiroListRetiradaAlarme->next;
+                }
+
+                ret = WaitForSingleObject(hEventRetiradaAlarmes, 500);
+            } while (ret == (DWORD)258);
+        }
+        onOffRetiradaAlarme = DESATIVADO;
+    }
 
     // O comando "return" abaixo é desnecessário, mas presente aqui para compatibilidade
     // com o Visual Studio da Microsoft
