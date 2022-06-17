@@ -68,8 +68,8 @@ int listSize = 0;
 int listSizeRetiradaOtimizacao = 0;
 
 int onOffComunicacao = ATIVADO;
-int onOffRetiradaOtimizacao = ATIVADO;
-int onOffRetiradaProcesso = DESATIVADO;
+int onOffRetiradaOtimizacao = DESATIVADO;
+int onOffRetiradaProcesso = ATIVADO;
 int onOffRetiradaAlarme = DESATIVADO;
 int onOffExibicaoOtimizacao = DESATIVADO;
 int onOffExibicaoProcesso = DESATIVADO;
@@ -511,9 +511,12 @@ void adicionaFinalRetirada(std::string data) {
 void removerDado(std::string data) {
     Node* aux, *remover = NULL;
 
-    if (first) {
+    if (first != NULL) {
         if ((first)->info == data) {
+            aux = first;
             first = first->next;
+            aux->info = "";
+            aux = NULL;
             listSize--;
         }
         else {
@@ -559,7 +562,27 @@ void* retiradaDadosOtimizacao() {
 }
 
 void* retiradaDadosProcesso() {
-    std::cout << "Caractere P digitado" << std::endl;
+    DWORD ret;
+    Sleep(1000);
+    struct Node* ponteiroListRetiradaProcesso = first;
+    if (onOffRetiradaProcesso) {
+        if (ponteiroListRetiradaProcesso != NULL) {
+            printInPrincipalScreen("Retirada de dados de processo desbloqueada");
+            do {
+                if (ponteiroListRetiradaProcesso->info.length() == 46) {
+                    std::cout << "Processo retirado -> " << ponteiroListRetiradaProcesso->info << std::endl;
+                    removerDado(ponteiroListRetiradaProcesso->info);
+                }
+
+                if (ponteiroListRetiradaProcesso->next != first) {
+                    ponteiroListRetiradaProcesso = ponteiroListRetiradaProcesso->next;
+                }
+
+                ret = WaitForSingleObject(hEventRetiradaProcesso, 500);
+            } while (ret == (DWORD)258);
+        }
+        onOffRetiradaProcesso = DESATIVADO;
+    }
 
     // O comando "return" abaixo é desnecessário, mas presente aqui para compatibilidade
     // com o Visual Studio da Microsoft
