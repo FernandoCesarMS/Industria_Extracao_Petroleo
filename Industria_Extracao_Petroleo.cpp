@@ -18,17 +18,12 @@
 #pragma warning(disable:4996)
 
 #define	ESC				0x1B			//Tecla para encerrar o programa
-#define LIVRE 0
-#define OCUPADO 1
-#define FALHA -1
-#define SUCESSO 1
 #define ATIVADO 1
 #define DESATIVADO 0
 
 typedef unsigned (WINAPI *CAST_FUNCTION)(LPVOID);
 typedef unsigned* CAST_LPDWORD;
 
-void* comunicacaoDados();
 void* retiradaDadosOtimizacao();
 void* retiradaDadosProcesso();
 void* retiradaAlarme();
@@ -39,6 +34,10 @@ void* limpaJanelaConsoleExibicaoAlarmes();
 void* encerraTarefas();
 void adicionaFinal(std::string);
 void adicionaFinalRetirada(std::string);
+void printInPrincipalScreen(std::string);
+template<typename ... Args>
+std::string string_format(const std::string& format, Args ... args);
+
 DWORD WINAPI WaitComunicacaoEvent(LPVOID);
 DWORD WINAPI WaitRetiradaOtimizacaoEvent(LPVOID);
 DWORD WINAPI WaitRetiradaProcessoEvent(LPVOID);
@@ -64,17 +63,25 @@ struct Node {
 };
 
 struct Node* first = NULL;
+struct Node* listRetiradaOtimizacao = NULL;
 int listSize = 0;
 int listSizeRetiradaOtimizacao = 0;
+
 int onOffComunicacao = ATIVADO;
 int onOffRetiradaOtimizacao = ATIVADO;
-int onOffRetiradaProcesso = ATIVADO;
-int onOffRetiradaAlarme = ATIVADO;
-int onOffExibicaoOtimizacao = ATIVADO;
-int onOffExibicaoProcesso = ATIVADO;
-int onOffExibicaoAlarmes = ATIVADO;
-int onOffLimpaConsole = ATIVADO;
+int onOffRetiradaProcesso = DESATIVADO;
+int onOffRetiradaAlarme = DESATIVADO;
+int onOffExibicaoOtimizacao = DESATIVADO;
+int onOffExibicaoProcesso = DESATIVADO;
+int onOffExibicaoAlarmes = DESATIVADO;
+int onOffLimpaConsole = DESATIVADO;
+
 int nSeqGeral = 1;
+
+//Mutexes
+HANDLE hMutexID;
+HANDLE hMutexCOUT;
+//Eventos
 HANDLE hEventComunicacao;
 HANDLE hEventRetiradaOtimizacao;
 HANDLE hEventRetiradaProcesso;
@@ -89,23 +96,27 @@ std::string strings[8];
 using namespace std;
 using namespace std::chrono;
 
-int main()
-{
-    HANDLE hThreads[4];
+int main() {
+    HANDLE hThreads[10];
     DWORD dwThreadID;
     DWORD dwExitCode = 0;
     DWORD dwRet;
 
     char caractereDigitado;
     
+    //Criando Mutexes
+    hMutexID = CreateMutex(NULL, FALSE, L"Acessa ID");
+    hMutexCOUT = CreateMutex(NULL, FALSE, L"Acessa Cout");
+
+    //Criando eventos 
     hEventComunicacao = CreateEvent(NULL, FALSE, FALSE, L"Evento Comunicacao");
     hEventRetiradaOtimizacao = CreateEvent(NULL, FALSE, FALSE, L"Evento retirada de dados de otimização");
     hEventRetiradaProcesso = CreateEvent(NULL, FALSE, FALSE, L"Evento retirada de dados de processo");
-    hEventRetiradaAlarmes = CreateEvent(NULL, FALSE, FALSE, L"Evento retirada de dados de alarmes");
+    /*hEventRetiradaAlarmes = CreateEvent(NULL, FALSE, FALSE, L"Evento retirada de dados de alarmes");
     hEventExibicaoOtimizacao = CreateEvent(NULL, FALSE, FALSE, L"Evento exibição de dados de otimização");
     hEventExibicaoProcesso = CreateEvent(NULL, FALSE, FALSE, L"Evento exibição de dados de processo");
     hEventExibicaoAlarmes = CreateEvent(NULL, FALSE, FALSE, L"Evento exibição de alarmes");
-    hEventLimpaConsole = CreateEvent(NULL, FALSE, FALSE, L"Evento de limpar o console");
+    hEventLimpaConsole = CreateEvent(NULL, FALSE, FALSE, L"Evento de limpar o console");*/
     hEventEsc = CreateEvent(NULL, FALSE, FALSE, L"EscEvento");
 
     for (int i = 0; i < 3; i++) {
@@ -129,6 +140,16 @@ int main()
         0,
         (CAST_LPDWORD)&dwThreadID
     );
+
+    hThreads[4] = (HANDLE)_beginthreadex(
+        NULL,
+        0,
+        (CAST_FUNCTION)WaitRetiradaProcessoEvent,
+        (LPVOID)4,
+        0,
+        (CAST_LPDWORD)&dwThreadID
+    );
+
     //Leitura dos caractéres do teclado
     do {
         caractereDigitado = _getch(); //Lê um caractere
@@ -153,14 +174,46 @@ int main()
                     onOffRetiradaOtimizacao = DESATIVADO;
                 }
                 break;
-            case ('p'):
-                retiradaDadosProcesso();
+            case ('w'): {
+                struct Node* ponteiroListRetiradaOtimizacao = listRetiradaOtimizacao;
+                do {
+                    std::cout << ponteiroListRetiradaOtimizacao->info << std::endl;
+                    if (ponteiroListRetiradaOtimizacao->next != listRetiradaOtimizacao) {
+                        ponteiroListRetiradaOtimizacao = ponteiroListRetiradaOtimizacao->next;
+                    }
+                    else break;
+                    Sleep(100);
+                } while (ponteiroListRetiradaOtimizacao != listRetiradaOtimizacao);
+                std::cout << listSizeRetiradaOtimizacao << std::endl;
+                break;
+            }
+            case ('q'): {
+                struct Node* ponteiroListRetiradaOtimizacao = first;
+                do {
+                    std::cout << ponteiroListRetiradaOtimizacao->info << std::endl;
+                    if (ponteiroListRetiradaOtimizacao->next != first) {
+                        ponteiroListRetiradaOtimizacao = ponteiroListRetiradaOtimizacao->next;
+                    }
+                    else break;
+                    Sleep(100);
+                } while (ponteiroListRetiradaOtimizacao != first);
+                std::cout << listSizeRetiradaOtimizacao << std::endl;
+                break;
+            }
+            case ('t'):
+                exibicaoDadosOtimizacao();
                 break;
             case ('a'):
                 retiradaAlarme();
                 break;
-            case ('t'):
-                exibicaoDadosOtimizacao();
+            case ('p'):
+                PulseEvent(hEventRetiradaProcesso);
+                if (onOffRetiradaProcesso == DESATIVADO) {
+                    onOffRetiradaProcesso = ATIVADO;
+                }
+                else {
+                    onOffRetiradaProcesso = DESATIVADO;
+                }
                 break;
             case ('r'):
                 exibicaoDadosProcesso();
@@ -181,13 +234,17 @@ int main()
     } while (caractereDigitado != ESC);
        
     dwRet = WaitForMultipleObjects(3, hThreads, TRUE, INFINITE);
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 5; i++) {
         GetExitCodeThread(hThreads[i], &dwExitCode);
         CloseHandle(hThreads[i]);
     }
 
     CloseHandle(hEventComunicacao);
     CloseHandle(hEventEsc);
+    CloseHandle(hEventRetiradaOtimizacao);
+    CloseHandle(hEventRetiradaProcesso);
+    CloseHandle(hMutexID);
+    CloseHandle(hMutexCOUT);
     // TODO: Tarefas de retirada
     // TODO: Tarefa de comunicação de Dados
     // TODO: Tarefas de exibição
@@ -200,23 +257,32 @@ int main()
     return EXIT_SUCCESS;
 }
 
+void printInPrincipalScreen(std::string data) {
+    WaitForSingleObject(hMutexCOUT,INFINITE);
+    std::cout << data << std::endl;
+    ReleaseMutex(hMutexCOUT);
+}
+
 DWORD WINAPI WaitComunicacaoEvent(LPVOID id) {
     HANDLE Events[2] = { hEventComunicacao, hEventEsc };
     DWORD ret;
     int nTipoEvento;
 
     do {
-        if (id == (LPVOID)0) comunicacaoOtimizacao(id);
+        if (id == (LPVOID)0) {
+            Sleep(10);
+            comunicacaoOtimizacao(id);
+        }
         else 
         if (id == (LPVOID)1) comunicacaoSCADA(id);
         else 
         if (id == (LPVOID)2) comunicacaoAlarme(id);
-        std::cout << "Thread " << id << " de comunicacao foi bloqueada! Aguardando desbloqueamento" << std::endl;
+        printInPrincipalScreen(string_format("Thread %d de comunicacao foi bloqueada! Aguardando desbloqueamento", id));
         ret = WaitForMultipleObjects(2, Events, FALSE, INFINITE);
         nTipoEvento = ret - WAIT_OBJECT_0;
     } while (nTipoEvento == 0);
 
-    std::cout << "Thread " << id << " terminando" << std::endl;
+    printInPrincipalScreen(string_format("Thread %d terminando", id));
 
     _endthreadex(0);
 
@@ -230,12 +296,31 @@ DWORD WINAPI WaitRetiradaOtimizacaoEvent(LPVOID id) {
 
     do {
         retiradaDadosOtimizacao();
-        std::cout << "Thread " << id << " de retirada de dados de otimização foi bloqueada! Aguardando desbloqueamento" << std::endl;
+        printInPrincipalScreen(string_format("Thread %d de retirada de dados de otimização foi bloqueada! Aguardando desbloqueamento", id));
         ret = WaitForMultipleObjects(2, Events, FALSE, INFINITE);
         nTipoEvento = ret - WAIT_OBJECT_0;
     } while (nTipoEvento == 0);
 
-    std::cout << "Thread " << id << " terminando" << std::endl;
+    printInPrincipalScreen(string_format("Thread %d terminando", id));
+
+    _endthreadex(0);
+
+    return (0);
+}
+
+DWORD WINAPI WaitRetiradaProcessoEvent(LPVOID id) {
+    HANDLE Events[2] = { hEventRetiradaProcesso, hEventEsc };
+    DWORD ret;
+    int nTipoEvento;
+
+    do {
+        retiradaDadosProcesso();
+        printInPrincipalScreen(string_format("Thread %d de retirada de dados de processo foi bloqueada! Aguardando desbloqueamento", id));
+        ret = WaitForMultipleObjects(2, Events, FALSE, INFINITE);
+        nTipoEvento = ret - WAIT_OBJECT_0;
+    } while (nTipoEvento == 0);
+
+    printInPrincipalScreen(string_format("Thread %d terminando", id));
 
     _endthreadex(0);
 
@@ -290,11 +375,12 @@ struct tm* getHorarioLocal() {
 }
 
 void comunicacaoOtimizacao(LPVOID id) {
-    std::cout << "Thread " << id << " de comunicacao está enviando mensagens" << std::endl;
+    printInPrincipalScreen(string_format("Thread %d de comunicacao está enviando mensagens", id));
     DWORD ret;
     int nTipoEvento = 0;
     do {
         if (onOffComunicacao) {
+            WaitForSingleObject(hMutexID, INFINITE);
             int nSeq = nSeqGeral;
             int tipo = 11;
             double spPress = (rand() % 100000);
@@ -303,9 +389,10 @@ void comunicacaoOtimizacao(LPVOID id) {
             struct tm* horarioLocal = getHorarioLocal();
 
             std::string stringFormatada = string_format("%06d|%d|%06.1f|%06.1f|%05d|%02d:%02d:%02d", nSeq, tipo, spPress / 10, spTemp / 10, vol, horarioLocal->tm_hour, horarioLocal->tm_min, horarioLocal->tm_sec);
-
+         
             adicionaFinal(stringFormatada);
             nSeqGeral++;
+            ReleaseMutex(hMutexID);
         }
 
         ret = WaitForSingleObject(hEventComunicacao, 1000+(rand()%4000));
@@ -314,11 +401,12 @@ void comunicacaoOtimizacao(LPVOID id) {
 }
 
 void comunicacaoSCADA(LPVOID id) {
-    std::cout << "Thread " << id << " de comunicacao está enviando mensagens" << std::endl;
+    printInPrincipalScreen(string_format("Thread %d de comunicacao está enviando mensagens", id));
     DWORD ret;
     int nTipoEvento = 0;
     do {
         if (onOffComunicacao) {
+            WaitForSingleObject(hMutexID, INFINITE);
             int nSeq = nSeqGeral;
             int tipo = 22;
             double press_T = (rand() % 100000);
@@ -331,6 +419,7 @@ void comunicacaoSCADA(LPVOID id) {
 
             adicionaFinal(stringFormatada);
             nSeqGeral++;
+            ReleaseMutex(hMutexID);
         }
         
         ret = WaitForSingleObject(hEventComunicacao, 500);
@@ -339,11 +428,12 @@ void comunicacaoSCADA(LPVOID id) {
 }
 
 void comunicacaoAlarme(LPVOID id) {
-    std::cout << "Thread " << id << " de comunicacao está enviando mensagens" << std::endl;
+    printInPrincipalScreen(string_format("Thread %d de comunicacao está enviando mensagens", id));
     DWORD ret;
     int nTipoEvento = 0;
     do {
         if (onOffComunicacao) {
+            WaitForSingleObject(hMutexID, INFINITE);
             int nSeq = nSeqGeral;
             int tipo = 55;
             int id = (rand() % 10000);
@@ -351,9 +441,10 @@ void comunicacaoAlarme(LPVOID id) {
             struct tm* horarioLocal = getHorarioLocal();
 
             std::string stringFormatada = string_format("%06d|%d|%04d|%03d|%02d:%02d:%02d", nSeq, tipo, id, prioridade, horarioLocal->tm_hour, horarioLocal->tm_min, horarioLocal->tm_sec);
-        
+
             adicionaFinal(stringFormatada);
             nSeqGeral++;
+            ReleaseMutex(hMutexID);
         }
         
         ret = WaitForSingleObject(hEventComunicacao, 1000 + (rand() % 4000));
@@ -370,7 +461,7 @@ void adicionaFinal(std::string data) {
         struct Node* temp;
         temp = new Node();
 
-        struct Node* a = first;
+        struct Node* aa = first;
 
         if (first == NULL) {
             temp = new Node(data, NULL);
@@ -379,50 +470,91 @@ void adicionaFinal(std::string data) {
         }
         else {
             do {
-                a = a->next;
-            } while (a->next != first);
+                aa = aa->next;
+            } while (aa->next != first);
 
-            temp = new Node(data, a->next);
-            a->next = temp;
+            temp = new Node(data, aa->next);
+            aa->next = temp;
         }
         listSize++;
-        std::cout << listSize << std::endl;
     }
 }
 
 void adicionaFinalRetirada(std::string data) {
-    if (listSize == 100) {
-        onOffComunicacao = DESATIVADO;
+    if (listSizeRetiradaOtimizacao == 200) {
+        onOffRetiradaOtimizacao = DESATIVADO;
     }
     else {
         // Inicializa o node
         struct Node* temp;
         temp = new Node();
 
-        struct Node* a = first;
+        struct Node* a = listRetiradaOtimizacao;
 
-        if (first == NULL) {
+        if (listRetiradaOtimizacao == NULL) {
             temp = new Node(data, NULL);
-            first = temp;
-            first->next = first;
+            listRetiradaOtimizacao = temp;
+            listRetiradaOtimizacao->next = listRetiradaOtimizacao;
         }
         else {
             do {
                 a = a->next;
-            } while (a->next != first);
+            } while (a->next != listRetiradaOtimizacao);
 
             temp = new Node(data, a->next);
             a->next = temp;
         }
-        listSize++;
-        std::cout << listSize << std::endl;
+        listSizeRetiradaOtimizacao++;
     }
 }
 
+void removerDado(std::string data) {
+    Node* aux, *remover = NULL;
+
+    if (first) {
+        if ((first)->info == data) {
+            first = first->next;
+            listSize--;
+        }
+        else {
+            aux = first;
+            while (aux->next && aux->next->info != data)
+                aux = aux->next;
+            if (aux->next) {
+                remover = aux->next;
+                aux->next = remover->next;
+                listSize--;
+            }
+        }
+    }
+}
 
 // THREADS SECUNDARIAS
 
 void* retiradaDadosOtimizacao() {
+    DWORD ret;
+    Sleep(1000);
+    struct Node* ponteiroListRetiradaOtimizacao = first;
+    if (onOffRetiradaOtimizacao) {
+        if (ponteiroListRetiradaOtimizacao != NULL) {
+            printInPrincipalScreen("Retirada de dados desbloqueada");
+            do {
+                if (ponteiroListRetiradaOtimizacao->info.length() == 38) {
+                    adicionaFinalRetirada(ponteiroListRetiradaOtimizacao->info);
+                    std::cout << "Otimizacao retirada -> " << ponteiroListRetiradaOtimizacao->info << std::endl;
+                    removerDado(ponteiroListRetiradaOtimizacao->info);
+                }
+
+                if (ponteiroListRetiradaOtimizacao->next != first) {
+                    ponteiroListRetiradaOtimizacao = ponteiroListRetiradaOtimizacao->next;
+                }
+                
+                ret = WaitForSingleObject(hEventRetiradaOtimizacao, 300);
+            } while (ret == (DWORD)258);
+        }
+        onOffRetiradaOtimizacao = DESATIVADO;
+    }
+    
     return (void*)NULL;
 }
 
