@@ -24,30 +24,29 @@
 typedef unsigned (WINAPI* CAST_FUNCTION)(LPVOID);
 typedef unsigned* CAST_LPDWORD;
 
-HANDLE hEventExibicaoAlarmes;
+HANDLE hEventExibicaoSCADA;
 HANDLE hEventEsc;
 
 int onOffExibicao = ATIVADO;
 
-DWORD WINAPI WaitExibicaoAlarmesEvent(LPVOID);
+DWORD WINAPI WaitExibicaoSCADAEvent(LPVOID);
 
 int main()
 {
-    SetConsoleTitle(L"Industria de Extracao de Petroleo - Exibicao de Dados de Otimizacao - Ana Goncalves e Fernando Silva");
+    SetConsoleTitle(L"Industria de Extracao de Petroleo - Exibicao de Dados de Processo - Ana Goncalves e Fernando Silva");
     HANDLE hThreads[1];
     DWORD dwThreadID;
     DWORD dwExitCode = 0;
     DWORD dwRet;
     char caractereDigitado;
 
-
-    hEventExibicaoAlarmes = CreateEvent(NULL, FALSE, FALSE, L"Evento exibição de dados de otimização");
+    hEventExibicaoSCADA = CreateEvent(NULL, FALSE, FALSE, L"Evento exibição de dados de Processo");
     hEventEsc = CreateEvent(NULL, FALSE, FALSE, L"EscEvento");
 
     hThreads[0] = (HANDLE)_beginthreadex(
         NULL,
         0,
-        (CAST_FUNCTION)WaitExibicaoAlarmesEvent,
+        (CAST_FUNCTION)WaitExibicaoSCADAEvent,
         (LPVOID)0,
         0,
         (CAST_LPDWORD)&dwThreadID
@@ -58,8 +57,8 @@ int main()
 
     do {
         caractereDigitado = _getch(); //Lê um caractere
-        if (caractereDigitado == 't') {
-            PulseEvent(hEventExibicaoAlarmes);
+        if (caractereDigitado == 'r') {
+            PulseEvent(hEventExibicaoSCADA);
         }
         else if (caractereDigitado == ESC) {
             PulseEvent(hEventEsc);
@@ -73,13 +72,13 @@ int main()
     }
 
     CloseHandle(hEventEsc);
-    CloseHandle(hEventExibicaoAlarmes);
+    CloseHandle(hEventExibicaoSCADA);
     Sleep(1000);
     return 0;
 }
 
-DWORD WINAPI WaitExibicaoAlarmesEvent(LPVOID id) {
-    HANDLE Events[2] = { hEventExibicaoAlarmes, hEventEsc };
+DWORD WINAPI WaitExibicaoSCADAEvent(LPVOID id) {
+    HANDLE Events[2] = { hEventExibicaoSCADA, hEventEsc };
     DWORD ret;
     int nTipoEvento;
 
@@ -87,11 +86,11 @@ DWORD WINAPI WaitExibicaoAlarmesEvent(LPVOID id) {
         ret = WaitForMultipleObjects(2, Events, FALSE, INFINITE);
         nTipoEvento = ret - WAIT_OBJECT_0;
         if (onOffExibicao == DESATIVADO && ret == 0) {
-            std::cout << "Thread " << id << " de exibicao de dados de processo esta desbloqueada!" << std::endl;
+            std::cout << "Thread " << id << " de exibicao de dados de SCADA esta desbloqueada!" << std::endl;
             onOffExibicao = ATIVADO;
         }
         else if (ret == 0) {
-            std::cout << "Thread " << id << " de exibicao de dados de processo foi bloqueada! Aguardando desbloqueamento" << std::endl;
+            std::cout << "Thread " << id << " de exibicao de dados de SCADA foi bloqueada! Aguardando desbloqueamento" << std::endl;
             onOffExibicao = DESATIVADO;
         }
     } while (nTipoEvento == 0);

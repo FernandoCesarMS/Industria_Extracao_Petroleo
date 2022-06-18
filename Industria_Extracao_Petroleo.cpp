@@ -62,7 +62,7 @@ struct Node {
     }
 };
 
-struct Node* first = NULL;
+struct Node* memoriaRAM = NULL;
 struct Node* listRetiradaOtimizacao = NULL;
 int listSize = 0;
 int listSizeRetiradaOtimizacao = 0;
@@ -71,7 +71,7 @@ int onOffComunicacao = ATIVADO;
 int onOffRetiradaOtimizacao = ATIVADO;
 int onOffRetiradaProcesso = ATIVADO;
 int onOffRetiradaAlarme = ATIVADO;
-int onOffExibicaoOtimizacao = DESATIVADO;
+int onOffExibicaoOtimizacao = ATIVADO;
 int onOffExibicaoProcesso = ATIVADO;
 int onOffExibicaoAlarmes = ATIVADO;
 int onOffLimpaConsole = ATIVADO;
@@ -230,15 +230,15 @@ int main(int argc, char* argv[]) {
                 break;
             }
             case ('q'): {
-                struct Node* ponteiroListRetiradaOtimizacao = first;
+                struct Node* ponteiroListRetiradaOtimizacao = memoriaRAM;
                 do {
                     std::cout << ponteiroListRetiradaOtimizacao->info << std::endl;
-                    if (ponteiroListRetiradaOtimizacao->next != first) {
+                    if (ponteiroListRetiradaOtimizacao->next != memoriaRAM) {
                         ponteiroListRetiradaOtimizacao = ponteiroListRetiradaOtimizacao->next;
                     }
                     else break;
                     Sleep(100);
-                } while (ponteiroListRetiradaOtimizacao != first);
+                } while (ponteiroListRetiradaOtimizacao != memoriaRAM);
                 std::cout << listSizeRetiradaOtimizacao << std::endl;
                 break;
             }
@@ -421,7 +421,6 @@ DWORD WINAPI WaitExibicaoOtimizacaoEvent(LPVOID id) {
 
     do {
         exibicaoDadosOtimizacao();
-        printInPrincipalScreen(string_format("Thread %d de exibição de otimização foi bloqueada! Aguardando desbloqueamento", id));
         ret = WaitForMultipleObjects(2, Events, FALSE, INFINITE);
         nTipoEvento = ret - WAIT_OBJECT_0;
     } while (nTipoEvento == 0);
@@ -440,7 +439,6 @@ DWORD WINAPI WaitExibicaoProcessoEvent(LPVOID id) {
 
     do {
         exibicaoDadosProcesso();
-        printInPrincipalScreen(string_format("Thread %d de exibição de processo foi bloqueada! Aguardando desbloqueamento", id));
         ret = WaitForMultipleObjects(2, Events, FALSE, INFINITE);
         nTipoEvento = ret - WAIT_OBJECT_0;
     } while (nTipoEvento == 0);
@@ -459,7 +457,6 @@ DWORD WINAPI WaitExibicaoAlarmesEvent(LPVOID id) {
 
     do {
         exibicaoAlarme();
-        printInPrincipalScreen(string_format("Thread %d de exibição de alarmes foi bloqueada! Aguardando desbloqueamento", id));
         ret = WaitForMultipleObjects(2, Events, FALSE, INFINITE);
         nTipoEvento = ret - WAIT_OBJECT_0;
     } while (nTipoEvento == 0);
@@ -604,17 +601,17 @@ void adicionaFinal(std::string data) {
         struct Node* temp;
         temp = new Node();
 
-        struct Node* aa = first;
+        struct Node* aa = memoriaRAM;
 
-        if (first == NULL) {
+        if (memoriaRAM == NULL) {
             temp = new Node(data, NULL);
-            first = temp;
-            first->next = first;
+            memoriaRAM = temp;
+            memoriaRAM->next = memoriaRAM;
         }
         else {
             do {
                 aa = aa->next;
-            } while (aa->next != first);
+            } while (aa->next != memoriaRAM);
 
             temp = new Node(data, aa->next);
             aa->next = temp;
@@ -654,16 +651,16 @@ void adicionaFinalRetirada(std::string data) {
 void removerDado(std::string data) {
     Node* aux, *remover = NULL;
 
-    if (first != NULL) {
-        if ((first)->info == data) {
-            aux = first;
-            first = first->next;
+    if (memoriaRAM != NULL) {
+        if ((memoriaRAM)->info == data) {
+            aux = memoriaRAM;
+            memoriaRAM = memoriaRAM->next;
             aux->info = "";
             aux = NULL;
             listSize--;
         }
         else {
-            aux = first;
+            aux = memoriaRAM;
             while (aux->next && aux->next->info != data)
                 aux = aux->next;
             if (aux->next) {
@@ -678,7 +675,7 @@ void removerDado(std::string data) {
 void* retiradaDadosOtimizacao() {
     DWORD ret;
     Sleep(1000);
-    struct Node* ponteiroListRetiradaOtimizacao = first;
+    struct Node* ponteiroListRetiradaOtimizacao = memoriaRAM;
     if (onOffRetiradaOtimizacao) {
         if (ponteiroListRetiradaOtimizacao != NULL) {
             printInPrincipalScreen("Retirada de dados desbloqueada");
@@ -689,7 +686,7 @@ void* retiradaDadosOtimizacao() {
                     removerDado(ponteiroListRetiradaOtimizacao->info);
                 }
 
-                if (ponteiroListRetiradaOtimizacao->next != first) {
+                if (ponteiroListRetiradaOtimizacao->next != memoriaRAM) {
                     ponteiroListRetiradaOtimizacao = ponteiroListRetiradaOtimizacao->next;
                 }
                 
@@ -705,17 +702,17 @@ void* retiradaDadosOtimizacao() {
 void* retiradaDadosProcesso() {
     DWORD ret;
     Sleep(1000);
-    struct Node* ponteiroListRetiradaProcesso = first;
+    struct Node* ponteiroListRetiradaProcesso = memoriaRAM;
     if (onOffRetiradaProcesso) {
         if (ponteiroListRetiradaProcesso != NULL) {
             printInPrincipalScreen("Retirada de dados de processo desbloqueada");
             do {
                 if (ponteiroListRetiradaProcesso->info.length() == 46) {
-                    std::cout << "Processo retirado -> " << ponteiroListRetiradaProcesso->info << std::endl;
+                    std::cout << "Processo retirado   -> " << ponteiroListRetiradaProcesso->info << std::endl;
                     removerDado(ponteiroListRetiradaProcesso->info);
                 }
 
-                if (ponteiroListRetiradaProcesso->next != first) {
+                if (ponteiroListRetiradaProcesso->next != memoriaRAM) {
                     ponteiroListRetiradaProcesso = ponteiroListRetiradaProcesso->next;
                 }
 
@@ -733,17 +730,17 @@ void* retiradaDadosProcesso() {
 void* retiradaAlarme() {
     DWORD ret;
     Sleep(1000);
-    struct Node* ponteiroListRetiradaAlarme = first;
+    struct Node* ponteiroListRetiradaAlarme = memoriaRAM;
     if (onOffRetiradaAlarme) {
         if (ponteiroListRetiradaAlarme != NULL) {
             printInPrincipalScreen("Retirada de dados de alarme desbloqueada");
             do {
                 if (ponteiroListRetiradaAlarme->info.length() == 27) {
-                    std::cout << "Alarme retirado -> " << ponteiroListRetiradaAlarme->info << std::endl;
+                    std::cout << "Alarme retirado     -> " << ponteiroListRetiradaAlarme->info << std::endl;
                     removerDado(ponteiroListRetiradaAlarme->info);
                 }
 
-                if (ponteiroListRetiradaAlarme->next != first) {
+                if (ponteiroListRetiradaAlarme->next != memoriaRAM) {
                     ponteiroListRetiradaAlarme = ponteiroListRetiradaAlarme->next;
                 }
 
@@ -771,7 +768,7 @@ void* exibicaoDadosOtimizacao() {
         ZeroMemory(&pi, sizeof(pi));
 
         bProcess = CreateProcess(
-            L"C:\\Users\\CMNan\\source\\repos\\Industria_Extracao_Petroleo\\ProcessExibicaoOtimizacao\\x64\\Debug\\ProcessExibicaoOtimizacao.exe",
+            L".\\ProcessExibicaoOtimizacao\\x64\\Debug\\ProcessExibicaoOtimizacao.exe",
             NULL,
             NULL,
             NULL,
@@ -795,18 +792,74 @@ void* exibicaoDadosOtimizacao() {
 }
 
 void* exibicaoDadosProcesso() {
-    std::cout << "Caractere R digitado" << std::endl;
+    if (onOffExibicaoProcesso) {
+        HANDLE hProcess = 0;
+        HANDLE hThread = 0;
+        STARTUPINFO si;
+        PROCESS_INFORMATION pi;
+        DWORD dwProcessID = 0;
+        BOOL bProcess;
 
-    // O comando "return" abaixo é desnecessário, mas presente aqui para compatibilidade
-    // com o Visual Studio da Microsoft
+        ZeroMemory(&si, sizeof(si));
+        ZeroMemory(&pi, sizeof(pi));
+
+        bProcess = CreateProcess(
+            L".\\ProcessExibicaoSCADA\\x64\\Debug\\ProcessExibicaoSCADA.exe",
+            NULL,
+            NULL,
+            NULL,
+            FALSE,
+            CREATE_NEW_CONSOLE,
+            NULL,
+            NULL,
+            &si,
+            &pi);
+
+        if (bProcess == FALSE) {
+            cout << "Create Process Failed & Error NO - " << GetLastError() << endl;
+        }
+
+        WaitForSingleObject(pi.hProcess, INFINITE);
+        CloseHandle(pi.hProcess);
+        CloseHandle(pi.hThread);
+    }
+
     return (void*)NULL;
 }
 
 void* exibicaoAlarme() {
-    std::cout << "Caractere L digitado" << std::endl;
+    if (onOffExibicaoAlarmes) {
+        HANDLE hProcess = 0;
+        HANDLE hThread = 0;
+        STARTUPINFO si;
+        PROCESS_INFORMATION pi;
+        DWORD dwProcessID = 0;
+        BOOL bProcess;
 
-    // O comando "return" abaixo é desnecessário, mas presente aqui para compatibilidade
-    // com o Visual Studio da Microsoft
+        ZeroMemory(&si, sizeof(si));
+        ZeroMemory(&pi, sizeof(pi));
+
+        bProcess = CreateProcess(
+            L".\\ProcessExibicaoAlarmes\\x64\\Debug\\ProcessExibicaoAlarmes.exe",
+            NULL,
+            NULL,
+            NULL,
+            FALSE,
+            CREATE_NEW_CONSOLE,
+            NULL,
+            NULL,
+            &si,
+            &pi);
+
+        if (bProcess == FALSE) {
+            cout << "Create Process Failed & Error NO - " << GetLastError() << endl;
+        }
+
+        WaitForSingleObject(pi.hProcess, INFINITE);
+        CloseHandle(pi.hProcess);
+        CloseHandle(pi.hThread);
+    }
+
     return (void*)NULL;
 }
 

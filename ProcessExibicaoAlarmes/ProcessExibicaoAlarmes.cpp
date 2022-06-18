@@ -54,11 +54,11 @@ int main()
     );
     if (hThreads[0]) printf("Thread 1 criada. ID = %d\n", dwThreadID);
 
-    std::cout << "Exibicao de dados de processo liberada" << std::endl;
+    std::cout << "Exibicao de dados de alarmes liberada" << std::endl;
 
     do {
         caractereDigitado = _getch(); //Lê um caractere
-        if (caractereDigitado == 't') {
+        if (caractereDigitado == 'l') {
             PulseEvent(hEventExibicaoAlarmes);
         }
         else if (caractereDigitado == ESC) {
@@ -87,11 +87,11 @@ DWORD WINAPI WaitExibicaoAlarmesEvent(LPVOID id) {
         ret = WaitForMultipleObjects(2, Events, FALSE, INFINITE);
         nTipoEvento = ret - WAIT_OBJECT_0;
         if (onOffExibicao == DESATIVADO && ret == 0) {
-            std::cout << "Thread " << id << " de exibicao de dados de processo esta desbloqueada!" << std::endl;
+            std::cout << "Thread " << id << " de exibicao de dados de alarmes esta desbloqueada!" << std::endl;
             onOffExibicao = ATIVADO;
         }
         else if (ret == 0) {
-            std::cout << "Thread " << id << " de exibicao de dados de processo foi bloqueada! Aguardando desbloqueamento" << std::endl;
+            std::cout << "Thread " << id << " de exibicao de dados de alarmes foi bloqueada! Aguardando desbloqueamento" << std::endl;
             onOffExibicao = DESATIVADO;
         }
     } while (nTipoEvento == 0);
