@@ -33,7 +33,7 @@ DWORD WINAPI WaitExibicaoAlarmesEvent(LPVOID);
 
 int main()
 {
-    SetConsoleTitle(L"Industria de Extracao de Petroleo - Exibicao de Dados de Otimizacao - Ana Goncalves e Fernando Silva");
+    SetConsoleTitle(L"Industria de Extracao de Petroleo - Exibicao de Alarmes - Ana Goncalves e Fernando Silva");
     HANDLE hThreads[1];
     DWORD dwThreadID;
     DWORD dwExitCode = 0;
@@ -63,6 +63,9 @@ int main()
         }
         else if (caractereDigitado == ESC) {
             PulseEvent(hEventEsc);
+        }
+        else if (caractereDigitado == 'z') {
+            std::cout << "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n";
         }
     } while (caractereDigitado != ESC);
 
