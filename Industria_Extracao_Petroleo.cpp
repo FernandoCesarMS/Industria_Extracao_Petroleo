@@ -1,5 +1,5 @@
-#include <iostream>
 #define WIN32_LEAN_AND_MEAN 
+#include <iostream>
 #include <windows.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -70,17 +70,18 @@ int listSizeRetiradaOtimizacao = 0;
 int onOffComunicacao = ATIVADO;
 int onOffRetiradaOtimizacao = ATIVADO;
 int onOffRetiradaProcesso = ATIVADO;
-int onOffRetiradaAlarme = DESATIVADO;
+int onOffRetiradaAlarme = ATIVADO;
 int onOffExibicaoOtimizacao = DESATIVADO;
-int onOffExibicaoProcesso = DESATIVADO;
-int onOffExibicaoAlarmes = DESATIVADO;
-int onOffLimpaConsole = DESATIVADO;
+int onOffExibicaoProcesso = ATIVADO;
+int onOffExibicaoAlarmes = ATIVADO;
+int onOffLimpaConsole = ATIVADO;
 
 int nSeqGeral = 1;
 
 //Mutexes
 HANDLE hMutexID;
 HANDLE hMutexCOUT;
+
 //Eventos
 HANDLE hEventComunicacao;
 HANDLE hEventRetiradaOtimizacao;
@@ -96,14 +97,14 @@ std::string strings[8];
 using namespace std;
 using namespace std::chrono;
 
-int main() {
+int main(int argc, char* argv[]) {
+    SetConsoleTitle(L"Industria de Extracao de Petroleo - Ana Goncalves e Fernando Silva");
     HANDLE hThreads[10];
     DWORD dwThreadID;
     DWORD dwExitCode = 0;
     DWORD dwRet;
-
     char caractereDigitado;
-    
+
     //Criando Mutexes
     hMutexID = CreateMutex(NULL, FALSE, L"Acessa ID");
     hMutexCOUT = CreateMutex(NULL, FALSE, L"Acessa Cout");
@@ -128,8 +129,7 @@ int main() {
             0,
             (CAST_LPDWORD)&dwThreadID
         );
-        if (hThreads[i])
-            std::cout << "Thread " << i << " criada id " << dwThreadID << std::endl;
+        if (hThreads[i]) printInPrincipalScreen(string_format("Thread %d criada. ID = %d\n", i, dwThreadID));
     }
 
     hThreads[3] = (HANDLE)_beginthreadex(
@@ -140,6 +140,7 @@ int main() {
         0,
         (CAST_LPDWORD)&dwThreadID
     );
+    if (hThreads[3]) printInPrincipalScreen(string_format("Thread 3 criada. ID = %d\n", dwThreadID));
 
     hThreads[4] = (HANDLE)_beginthreadex(
         NULL,
@@ -149,6 +150,7 @@ int main() {
         0,
         (CAST_LPDWORD)&dwThreadID
     );
+    if (hThreads[4]) printInPrincipalScreen(string_format("Thread 4 criada. ID = %d\n", dwThreadID));
 
     hThreads[5] = (HANDLE)_beginthreadex(
         NULL,
@@ -158,6 +160,7 @@ int main() {
         0,
         (CAST_LPDWORD)&dwThreadID
     );
+    if (hThreads[5]) printInPrincipalScreen(string_format("Thread 5 criada. ID = %d\n", dwThreadID));
 
     hThreads[6] = (HANDLE)_beginthreadex(
         NULL,
@@ -167,6 +170,7 @@ int main() {
         0,
         (CAST_LPDWORD)&dwThreadID
     );
+    if (hThreads[6]) printInPrincipalScreen(string_format("Thread 6 criada. ID = %d\n", dwThreadID));
 
     hThreads[7] = (HANDLE)_beginthreadex(
         NULL,
@@ -176,6 +180,7 @@ int main() {
         0,
         (CAST_LPDWORD)&dwThreadID
     );
+    if (hThreads[7]) printInPrincipalScreen(string_format("Thread 7 criada. ID = %d\n", dwThreadID));
 
     hThreads[8] = (HANDLE)_beginthreadex(
         NULL,
@@ -185,6 +190,7 @@ int main() {
         0,
         (CAST_LPDWORD)&dwThreadID
     );
+    if (hThreads[8]) printInPrincipalScreen(string_format("Thread 8 criada. ID = %d\n", dwThreadID));
 
     //Leitura dos caractéres do teclado
     do {
@@ -236,7 +242,7 @@ int main() {
                 std::cout << listSizeRetiradaOtimizacao << std::endl;
                 break;
             }
-            case ('t'):
+            case ('t'): {
                 PulseEvent(hEventExibicaoOtimizacao);
                 if (onOffExibicaoOtimizacao == DESATIVADO) {
                     onOffExibicaoOtimizacao = ATIVADO;
@@ -245,6 +251,7 @@ int main() {
                     onOffExibicaoOtimizacao = DESATIVADO;
                 }
                 break;
+            }
             case ('a'):
                 PulseEvent(hEventRetiradaAlarmes);
                 if (onOffRetiradaAlarme == DESATIVADO) {
@@ -309,9 +316,6 @@ int main() {
     CloseHandle(hEventExibicaoAlarmes);
     CloseHandle(hMutexID);
     CloseHandle(hMutexCOUT);
-    // TODO: Tarefas de retirada
-    // TODO: Tarefa de comunicação de Dados
-    // TODO: Tarefas de exibição
 
     std::cout << "Clica pra terminar ai" << std::endl;
     _getch();
@@ -755,10 +759,38 @@ void* retiradaAlarme() {
 }
 
 void* exibicaoDadosOtimizacao() {
-    std::cout << "Caractere T digitado" << std::endl;
+    if (onOffExibicaoOtimizacao) {
+        HANDLE hProcess = 0;
+        HANDLE hThread = 0;
+        STARTUPINFO si;
+        PROCESS_INFORMATION pi;
+        DWORD dwProcessID = 0;
+        BOOL bProcess;
 
-    // O comando "return" abaixo é desnecessário, mas presente aqui para compatibilidade
-    // com o Visual Studio da Microsoft
+        ZeroMemory(&si, sizeof(si));
+        ZeroMemory(&pi, sizeof(pi));
+
+        bProcess = CreateProcess(
+            L"C:\\Users\\CMNan\\source\\repos\\HelloWorld\\x64\\Debug\\HelloWorld.exe",
+            NULL,
+            NULL,
+            NULL,
+            FALSE,
+            CREATE_NEW_CONSOLE,
+            NULL,
+            NULL,
+            &si,
+            &pi);
+
+        if (bProcess == FALSE) {
+            cout << "Create Process Failed & Error NO - " << GetLastError() << endl;
+        }
+    
+        WaitForSingleObject(pi.hProcess, INFINITE);
+        CloseHandle(pi.hProcess);
+        CloseHandle(pi.hThread);
+    }
+
     return (void*)NULL;
 }
 
