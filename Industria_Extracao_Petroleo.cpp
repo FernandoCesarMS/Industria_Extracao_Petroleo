@@ -771,7 +771,7 @@ void* exibicaoDadosOtimizacao() {
         ZeroMemory(&pi, sizeof(pi));
 
         bProcess = CreateProcess(
-            L"C:\\Users\\CMNan\\source\\repos\\HelloWorld\\x64\\Debug\\HelloWorld.exe",
+            L"C:\\Users\\CMNan\\source\\repos\\Industria_Extracao_Petroleo\\ProcessExibicaoOtimizacao\\x64\\Debug\\ProcessExibicaoOtimizacao.exe",
             NULL,
             NULL,
             NULL,
