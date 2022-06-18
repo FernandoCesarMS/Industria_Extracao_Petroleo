@@ -31,10 +31,10 @@ void* exibicaoDadosOtimizacao();
 void* exibicaoDadosProcesso();
 void* exibicaoAlarme();
 void* limpaJanelaConsoleExibicaoAlarmes();
-void* encerraTarefas();
 void adicionaFinal(std::string);
 void adicionaFinalRetirada(std::string);
 void printInPrincipalScreen(std::string);
+bool removerDado(std::string);
 template<typename ... Args>
 std::string string_format(const std::string& format, Args ... args);
 
@@ -71,16 +71,18 @@ int onOffComunicacao = ATIVADO;
 int onOffRetiradaOtimizacao = ATIVADO;
 int onOffRetiradaProcesso = ATIVADO;
 int onOffRetiradaAlarme = ATIVADO;
-int onOffExibicaoOtimizacao = ATIVADO;
-int onOffExibicaoProcesso = ATIVADO;
-int onOffExibicaoAlarmes = ATIVADO;
+int onOffExibicaoOtimizacao = DESATIVADO;
+int onOffExibicaoProcesso = DESATIVADO;
+int onOffExibicaoAlarmes = DESATIVADO;
 int onOffLimpaConsole = ATIVADO;
 
-int nSeqGeral = 1;
+int nSeqGeral = 0;
 
 //Mutexes
 HANDLE hMutexID;
 HANDLE hMutexCOUT;
+HANDLE hMutexAdicionaFinal;
+HANDLE hMutexRemoverDado;
 
 //Eventos
 HANDLE hEventComunicacao;
@@ -108,6 +110,8 @@ int main(int argc, char* argv[]) {
     //Criando Mutexes
     hMutexID = CreateMutex(NULL, FALSE, L"Acessa ID");
     hMutexCOUT = CreateMutex(NULL, FALSE, L"Acessa Cout");
+    hMutexAdicionaFinal = CreateMutex(NULL, FALSE, L"Acessa AdicionaFinal");
+    hMutexRemoverDado = CreateMutex(NULL, FALSE, L"Acessa RemoverDado");
 
     //Criando eventos 
     hEventComunicacao = CreateEvent(NULL, FALSE, FALSE, L"Evento Comunicacao");
@@ -226,20 +230,24 @@ int main(int argc, char* argv[]) {
                     else break;
                     Sleep(100);
                 } while (ponteiroListRetiradaOtimizacao != listRetiradaOtimizacao);
-                std::cout << listSizeRetiradaOtimizacao << std::endl;
                 break;
             }
             case ('q'): {
                 struct Node* ponteiroListRetiradaOtimizacao = memoriaRAM;
-                do {
-                    std::cout << ponteiroListRetiradaOtimizacao->info << std::endl;
-                    if (ponteiroListRetiradaOtimizacao->next != memoriaRAM) {
-                        ponteiroListRetiradaOtimizacao = ponteiroListRetiradaOtimizacao->next;
-                    }
-                    else break;
-                    Sleep(100);
-                } while (ponteiroListRetiradaOtimizacao != memoriaRAM);
-                std::cout << listSizeRetiradaOtimizacao << std::endl;
+                if (memoriaRAM == NULL) {
+                    std::cout << "Lista Vazia" << std::endl;
+                }
+                else {
+                    do {
+                        std::cout << ponteiroListRetiradaOtimizacao->info << std::endl;
+                        if (ponteiroListRetiradaOtimizacao->next != memoriaRAM) {
+                            ponteiroListRetiradaOtimizacao = ponteiroListRetiradaOtimizacao->next;
+                        }
+                        else break;
+                        Sleep(100);
+                    } while (ponteiroListRetiradaOtimizacao != memoriaRAM);
+                }
+                
                 break;
             }
             case ('t'): {
@@ -293,14 +301,12 @@ int main(int argc, char* argv[]) {
                 break;
             case (ESC):
                 PulseEvent(hEventEsc);
-                encerraTarefas();
                 break;
             default:
                 std::cout << "Caractere invalido" << std::endl;
         }
     } while (caractereDigitado != ESC);
        
-    dwRet = WaitForMultipleObjects(3, hThreads, TRUE, INFINITE);
     for (int i = 0; i < 9; i++) {
         GetExitCodeThread(hThreads[i], &dwExitCode);
         CloseHandle(hThreads[i]);
@@ -317,10 +323,7 @@ int main(int argc, char* argv[]) {
     CloseHandle(hMutexID);
     CloseHandle(hMutexCOUT);
 
-    std::cout << "Clica pra terminar ai" << std::endl;
-    _getch();
-
-    std::cout << "Programa encerrado" << std::endl;
+    system("PAUSE");
 
     return EXIT_SUCCESS;
 }
@@ -338,19 +341,22 @@ DWORD WINAPI WaitComunicacaoEvent(LPVOID id) {
 
     do {
         if (id == (LPVOID)0) {
-            Sleep(10);
+            if (listSize == 1) memoriaRAM = NULL;
             comunicacaoOtimizacao(id);
         }
-        else 
-        if (id == (LPVOID)1) comunicacaoSCADA(id);
-        else 
-        if (id == (LPVOID)2) comunicacaoAlarme(id);
+        else if (id == (LPVOID)1) {
+            if (listSize == 1) memoriaRAM = NULL;
+            comunicacaoSCADA(id);
+        }
+        else if (id == (LPVOID)2) {
+            if (listSize == 1) memoriaRAM = NULL;
+            comunicacaoAlarme(id);
+        }
+            
         printInPrincipalScreen(string_format("Thread %d de comunicacao foi bloqueada! Aguardando desbloqueamento", id));
         ret = WaitForMultipleObjects(2, Events, FALSE, INFINITE);
         nTipoEvento = ret - WAIT_OBJECT_0;
     } while (nTipoEvento == 0);
-
-    printInPrincipalScreen(string_format("Thread %d terminando", id));
 
     _endthreadex(0);
 
@@ -369,8 +375,6 @@ DWORD WINAPI WaitRetiradaOtimizacaoEvent(LPVOID id) {
         nTipoEvento = ret - WAIT_OBJECT_0;
     } while (nTipoEvento == 0);
 
-    printInPrincipalScreen(string_format("Thread %d terminando", id));
-
     _endthreadex(0);
 
     return (0);
@@ -387,8 +391,6 @@ DWORD WINAPI WaitRetiradaProcessoEvent(LPVOID id) {
         ret = WaitForMultipleObjects(2, Events, FALSE, INFINITE);
         nTipoEvento = ret - WAIT_OBJECT_0;
     } while (nTipoEvento == 0);
-
-    printInPrincipalScreen(string_format("Thread %d terminando", id));
 
     _endthreadex(0);
 
@@ -407,8 +409,6 @@ DWORD WINAPI WaitRetiradaAlarmeEvent(LPVOID id) {
         nTipoEvento = ret - WAIT_OBJECT_0;
     } while (nTipoEvento == 0);
 
-    printInPrincipalScreen(string_format("Thread %d terminando", id));
-
     _endthreadex(0);
 
     return (0);
@@ -425,8 +425,6 @@ DWORD WINAPI WaitExibicaoOtimizacaoEvent(LPVOID id) {
         nTipoEvento = ret - WAIT_OBJECT_0;
     } while (nTipoEvento == 0);
 
-    printInPrincipalScreen(string_format("Thread %d terminando", id));
-
     _endthreadex(0);
 
     return (0);
@@ -442,8 +440,6 @@ DWORD WINAPI WaitExibicaoProcessoEvent(LPVOID id) {
         ret = WaitForMultipleObjects(2, Events, FALSE, INFINITE);
         nTipoEvento = ret - WAIT_OBJECT_0;
     } while (nTipoEvento == 0);
-
-    printInPrincipalScreen(string_format("Thread %d terminando", id));
 
     _endthreadex(0);
 
@@ -593,7 +589,8 @@ void comunicacaoAlarme(LPVOID id) {
 }
 
 void adicionaFinal(std::string data) {
-    if (listSize == 100) {
+    WaitForSingleObject(hMutexAdicionaFinal, INFINITE);
+    if (listSize == 100){
         onOffComunicacao = DESATIVADO;
     }
     else{
@@ -605,8 +602,9 @@ void adicionaFinal(std::string data) {
 
         if (memoriaRAM == NULL) {
             temp = new Node(data, NULL);
-            memoriaRAM = temp;
+            memoriaRAM = new Node(temp->info, temp->next);
             memoriaRAM->next = memoriaRAM;
+            memoriaRAM->info = "";
         }
         else {
             do {
@@ -618,6 +616,7 @@ void adicionaFinal(std::string data) {
         }
         listSize++;
     }
+    ReleaseMutex(hMutexAdicionaFinal);
 }
 
 void adicionaFinalRetirada(std::string data) {
@@ -648,21 +647,26 @@ void adicionaFinalRetirada(std::string data) {
     }
 }
 
-void removerDado(std::string data) {
+bool removerDado(std::string data) {
+    WaitForSingleObject(hMutexRemoverDado, INFINITE);
     Node* aux, *remover = NULL;
-
-    if (memoriaRAM != NULL) {
+    if (listSize == 1) {
+        listSize = 0;
+        memoriaRAM = NULL;
+        ReleaseMutex(hMutexRemoverDado);
+        return FALSE;
+    }
+    else if (memoriaRAM != NULL) {
         if ((memoriaRAM)->info == data) {
             aux = memoriaRAM;
             memoriaRAM = memoriaRAM->next;
-            aux->info = "";
-            aux = NULL;
             listSize--;
         }
         else {
             aux = memoriaRAM;
-            while (aux->next && aux->next->info != data)
+            while (aux->next && aux->next->info != data) {
                 aux = aux->next;
+            }
             if (aux->next) {
                 remover = aux->next;
                 aux->next = remover->next;
@@ -670,6 +674,8 @@ void removerDado(std::string data) {
             }
         }
     }
+    ReleaseMutex(hMutexRemoverDado);
+    return TRUE;
 }
 
 void* retiradaDadosOtimizacao() {
@@ -681,9 +687,10 @@ void* retiradaDadosOtimizacao() {
             printInPrincipalScreen("Retirada de dados desbloqueada");
             do {
                 if (ponteiroListRetiradaOtimizacao->info.length() == 38) {
-                    adicionaFinalRetirada(ponteiroListRetiradaOtimizacao->info);
-                    std::cout << "Otimizacao retirada -> " << ponteiroListRetiradaOtimizacao->info << std::endl;
-                    removerDado(ponteiroListRetiradaOtimizacao->info);
+                    if (removerDado(ponteiroListRetiradaOtimizacao->info)) {
+                        adicionaFinalRetirada(ponteiroListRetiradaOtimizacao->info);
+                        std::cout << "Otimizacao retirada -> " << ponteiroListRetiradaOtimizacao->info << std::endl;
+                    }
                 }
 
                 if (ponteiroListRetiradaOtimizacao->next != memoriaRAM) {
@@ -691,7 +698,7 @@ void* retiradaDadosOtimizacao() {
                 }
                 
                 ret = WaitForSingleObject(hEventRetiradaOtimizacao, 300);
-            } while (ret == (DWORD)258);
+            } while (ret == (DWORD)258 && listSize > 0);
         }
         onOffRetiradaOtimizacao = DESATIVADO;
     }
@@ -708,8 +715,9 @@ void* retiradaDadosProcesso() {
             printInPrincipalScreen("Retirada de dados de processo desbloqueada");
             do {
                 if (ponteiroListRetiradaProcesso->info.length() == 46) {
-                    std::cout << "Processo retirado   -> " << ponteiroListRetiradaProcesso->info << std::endl;
-                    removerDado(ponteiroListRetiradaProcesso->info);
+                    if (removerDado(ponteiroListRetiradaProcesso->info)) {
+                        std::cout << "Processo retirado   -> " << ponteiroListRetiradaProcesso->info << std::endl;
+                    }
                 }
 
                 if (ponteiroListRetiradaProcesso->next != memoriaRAM) {
@@ -717,7 +725,7 @@ void* retiradaDadosProcesso() {
                 }
 
                 ret = WaitForSingleObject(hEventRetiradaProcesso, 500);
-            } while (ret == (DWORD)258);
+            } while (ret == (DWORD)258 && listSize > 0);
         }
         onOffRetiradaProcesso = DESATIVADO;
     }
@@ -736,8 +744,9 @@ void* retiradaAlarme() {
             printInPrincipalScreen("Retirada de dados de alarme desbloqueada");
             do {
                 if (ponteiroListRetiradaAlarme->info.length() == 27) {
-                    std::cout << "Alarme retirado     -> " << ponteiroListRetiradaAlarme->info << std::endl;
-                    removerDado(ponteiroListRetiradaAlarme->info);
+                    if (removerDado(ponteiroListRetiradaAlarme->info)) {
+                        std::cout << "Alarme retirado     -> " << ponteiroListRetiradaAlarme->info << std::endl;
+                    }
                 }
 
                 if (ponteiroListRetiradaAlarme->next != memoriaRAM) {
@@ -745,7 +754,7 @@ void* retiradaAlarme() {
                 }
 
                 ret = WaitForSingleObject(hEventRetiradaAlarmes, 500);
-            } while (ret == (DWORD)258);
+            } while (ret == (DWORD)258 && listSize > 0);
         }
         onOffRetiradaAlarme = DESATIVADO;
     }
@@ -864,15 +873,7 @@ void* exibicaoAlarme() {
 }
 
 void* limpaJanelaConsoleExibicaoAlarmes() {
-    std::cout << "Caractere Z digitado" << std::endl;
-
-    // O comando "return" abaixo é desnecessário, mas presente aqui para compatibilidade
-    // com o Visual Studio da Microsoft
-    return (void*)NULL;
-}
-
-void* encerraTarefas() {
-    std::cout << "Caractere ESC digitado" << std::endl;
+    printInPrincipalScreen("Comando de limpar tela de alarmes enviado!");
 
     // O comando "return" abaixo é desnecessário, mas presente aqui para compatibilidade
     // com o Visual Studio da Microsoft
