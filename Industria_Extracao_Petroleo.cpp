@@ -370,7 +370,7 @@ DWORD WINAPI WaitRetiradaOtimizacaoEvent(LPVOID id) {
 
     do {
         retiradaDadosOtimizacao();
-        printInPrincipalScreen(string_format("Thread %d de retirada de dados de otimização foi bloqueada! Aguardando desbloqueamento", id));
+        printInPrincipalScreen(string_format("Thread %d de retirada de dados de otimizacao foi bloqueada! Aguardando desbloqueamento", id));
         ret = WaitForMultipleObjects(2, Events, FALSE, INFINITE);
         nTipoEvento = ret - WAIT_OBJECT_0;
     } while (nTipoEvento == 0);
@@ -511,7 +511,7 @@ struct tm* getHorarioLocal() {
 }
 
 void comunicacaoOtimizacao(LPVOID id) {
-    printInPrincipalScreen(string_format("Thread %d de comunicacao está enviando mensagens", id));
+    printInPrincipalScreen(string_format("Thread %d de comunicacao esta enviando mensagens", id));
     DWORD ret;
     int nTipoEvento = 0;
     do {
@@ -537,7 +537,7 @@ void comunicacaoOtimizacao(LPVOID id) {
 }
 
 void comunicacaoSCADA(LPVOID id) {
-    printInPrincipalScreen(string_format("Thread %d de comunicacao está enviando mensagens", id));
+    printInPrincipalScreen(string_format("Thread %d de comunicacao esta enviando mensagens", id));
     DWORD ret;
     int nTipoEvento = 0;
     do {
@@ -564,7 +564,7 @@ void comunicacaoSCADA(LPVOID id) {
 }
 
 void comunicacaoAlarme(LPVOID id) {
-    printInPrincipalScreen(string_format("Thread %d de comunicacao está enviando mensagens", id));
+    printInPrincipalScreen(string_format("Thread %d de comunicacao esta enviando mensagens", id));
     DWORD ret;
     int nTipoEvento = 0;
     do {
