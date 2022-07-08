@@ -73,7 +73,7 @@ int onOffRetiradaProcesso = ATIVADO;
 int onOffRetiradaAlarme = ATIVADO;
 int onOffExibicaoOtimizacao = DESATIVADO;
 int onOffExibicaoProcesso = DESATIVADO;
-int onOffExibicaoAlarmes = DESATIVADO;
+int onOffExibicaoAlarmes = ATIVADO;
 int onOffLimpaConsole = ATIVADO;
 
 int nSeqGeral = 0;
@@ -739,13 +739,55 @@ void* retiradaAlarme() {
     DWORD ret;
     Sleep(1000);
     struct Node* ponteiroListRetiradaAlarme = memoriaRAM;
+
+    HANDLE hCreateFile;
+    BOOL bWriteFile = 0;
+    DWORD dwNoBytesWrite;
+    char szWriteFileBuffer[1023];
+    DWORD dwWriteFileBufferSize = sizeof(szWriteFileBuffer);
+
+    hCreateFile = CreateFile(
+        L"\\\\.\\mailslot\\TAREFAALARME",
+        GENERIC_READ | GENERIC_WRITE,
+        0,
+        NULL,
+        OPEN_EXISTING,
+        FILE_ATTRIBUTE_NORMAL,
+        NULL
+    );
+
     if (onOffRetiradaAlarme) {
         if (ponteiroListRetiradaAlarme != NULL) {
             printInPrincipalScreen("Retirada de dados de alarme desbloqueada");
+            
             do {
                 if (ponteiroListRetiradaAlarme->info.length() == 27) {
                     if (removerDado(ponteiroListRetiradaAlarme->info)) {
-                        std::cout << "Alarme retirado     -> " << ponteiroListRetiradaAlarme->info << std::endl;
+                        if (bWriteFile == 0) {
+                            hCreateFile = CreateFile(
+                                L"\\\\.\\mailslot\\TAREFAALARME",
+                                GENERIC_READ | GENERIC_WRITE,
+                                0,
+                                NULL,
+                                OPEN_EXISTING,
+                                FILE_ATTRIBUTE_NORMAL,
+                                NULL
+                            );
+                        }
+                        char stringAlarme[64];
+                        int caracter;
+                        for (caracter = 0; caracter < ponteiroListRetiradaAlarme->info.length(); caracter++) {
+                            stringAlarme[caracter] = ponteiroListRetiradaAlarme->info[caracter];
+                        }
+                        stringAlarme[caracter] = '\0';
+                        strcpy(szWriteFileBuffer, stringAlarme);
+                        bWriteFile = WriteFile(
+                            hCreateFile,
+                            szWriteFileBuffer,
+                            dwWriteFileBufferSize,
+                            &dwNoBytesWrite,
+                            NULL
+                        );
                     }
                 }
 
@@ -758,7 +800,7 @@ void* retiradaAlarme() {
         }
         onOffRetiradaAlarme = DESATIVADO;
     }
-
+    CloseHandle(hCreateFile);
     // O comando "return" abaixo é desnecessário, mas presente aqui para compatibilidade
     // com o Visual Studio da Microsoft
     return (void*)NULL;

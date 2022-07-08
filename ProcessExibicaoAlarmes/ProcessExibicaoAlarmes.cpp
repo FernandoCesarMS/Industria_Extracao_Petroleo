@@ -28,8 +28,12 @@ HANDLE hEventExibicaoAlarmes;
 HANDLE hEventEsc;
 
 int onOffExibicao = ATIVADO;
+std::string strings[8];
 
 DWORD WINAPI WaitExibicaoAlarmesEvent(LPVOID);
+void split(std::string str, char separator);
+template<typename ... Args>
+std::string string_format(const std::string& format, Args ... args);
 
 int main()
 {
@@ -39,7 +43,6 @@ int main()
     DWORD dwExitCode = 0;
     DWORD dwRet;
     char caractereDigitado;
-
 
     hEventExibicaoAlarmes = CreateEvent(NULL, FALSE, FALSE, L"Evento exibição de dados de otimização");
     hEventEsc = CreateEvent(NULL, FALSE, FALSE, L"EscEvento");
@@ -55,7 +58,7 @@ int main()
     if (hThreads[0]) printf("Thread 1 criada. ID = %d\n", dwThreadID);
 
     std::cout << "Exibicao de dados de alarmes liberada" << std::endl;
-
+    
     do {
         caractereDigitado = _getch(); //Lê um caractere
         if (caractereDigitado == 'l') {
@@ -82,26 +85,75 @@ int main()
 }
 
 DWORD WINAPI WaitExibicaoAlarmesEvent(LPVOID id) {
+    HANDLE hSlots;
+
+    BOOL bReadFile;
+    DWORD dwNoBytesRead;
+    char szReadFileBuffer[1023];
+    DWORD dwReadFileBufferSize = sizeof(szReadFileBuffer);
+
+    hSlots = CreateMailslot(
+        L"\\\\.\\mailslot\\TAREFAALARME",
+        0,
+        MAILSLOT_WAIT_FOREVER,
+        NULL
+    );
     HANDLE Events[2] = { hEventExibicaoAlarmes, hEventEsc };
     DWORD ret;
     int nTipoEvento;
 
     do {
-        ret = WaitForMultipleObjects(2, Events, FALSE, INFINITE);
-        nTipoEvento = ret - WAIT_OBJECT_0;
-        if (onOffExibicao == DESATIVADO && ret == 0) {
-            std::cout << "Thread " << id << " de exibicao de dados de alarmes esta desbloqueada!" << std::endl;
-            onOffExibicao = ATIVADO;
-        }
-        else if (ret == 0) {
-            std::cout << "Thread " << id << " de exibicao de dados de alarmes foi bloqueada! Aguardando desbloqueamento" << std::endl;
-            onOffExibicao = DESATIVADO;
-        }
-    } while (nTipoEvento == 0);
-
-    std::cout << "Thread " << id << " terminando" << std::endl;
-
-    _endthreadex(0);
+        bReadFile = ReadFile(
+            hSlots,
+            szReadFileBuffer,
+            dwReadFileBufferSize,
+            &dwNoBytesRead,
+            NULL
+        );
+        split(szReadFileBuffer, '|');
+        std::string texto = "TEXTOTEXTOTEXTOTEXTOTEXTOTEXTOTEXTO";
+        std::string saida = strings[4] + " NSEQ: " + strings[0] + " " + texto + " PRI: " + strings[3];
+        ret = WaitForMultipleObjects(2, Events, FALSE, 1000);
+        std::cout << saida << std::endl;
+    } while (ret != 0);
+    CloseHandle(hSlots);
 
     return (0);
+}
+
+int len(std::string str) {
+    int length = 0;
+
+    for (int i = 0; str[i] != '\0'; i++) {
+        length++;
+    }
+
+    return length;
+}
+
+void split(std::string str, char separator) {
+    int currIndex = 0, i = 0, startIndex = 0, endIndex = 0;
+
+    while (i <= len(str)) {
+        if (str[i] == separator || i == len(str)) {
+            endIndex = i;
+            std::string subStr = "";
+            subStr.append(str, startIndex, endIndex - startIndex);
+            strings[currIndex] = subStr;
+            currIndex += 1;
+            startIndex = endIndex + 1;
+        }
+        i++;
+    }
+}
+
+template<typename ... Args>
+std::string string_format(const std::string& format, Args ... args)
+{
+    int size_s = std::snprintf(nullptr, 0, format.c_str(), args ...) + 1; // Extra space for '\0'
+    if (size_s <= 0) { throw std::runtime_error("Error during formatting."); }
+    auto size = static_cast<size_t>(size_s);
+    std::unique_ptr<char[]> buf(new char[size]);
+    std::snprintf(buf.get(), size, format.c_str(), args ...);
+    return std::string(buf.get(), buf.get() + size - 1); // We don't want the '\0' inside
 }
