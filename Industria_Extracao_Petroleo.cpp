@@ -72,7 +72,7 @@ int onOffRetiradaOtimizacao = ATIVADO;
 int onOffRetiradaProcesso = ATIVADO;
 int onOffRetiradaAlarme = ATIVADO;
 int onOffExibicaoOtimizacao = DESATIVADO;
-int onOffExibicaoProcesso = DESATIVADO;
+int onOffExibicaoProcesso = ATIVADO;
 int onOffExibicaoAlarmes = ATIVADO;
 int onOffLimpaConsole = ATIVADO;
 
@@ -710,13 +710,54 @@ void* retiradaDadosProcesso() {
     DWORD ret;
     Sleep(1000);
     struct Node* ponteiroListRetiradaProcesso = memoriaRAM;
+    
+    HANDLE hCreateFile2;
+    BOOL bWriteFile2 = 0;
+    DWORD dwNoBytesWrite2;
+    char szWriteFileBuffer2[1023];
+    DWORD dwWriteFileBufferSize2 = sizeof(szWriteFileBuffer2);
+
+    hCreateFile2 = CreateFile(
+        L"\\\\.\\mailslot\\TAREFASCADA",
+        GENERIC_READ | GENERIC_WRITE,
+        0,
+        NULL,
+        OPEN_EXISTING,
+        FILE_ATTRIBUTE_NORMAL,
+        NULL
+    );
+    
     if (onOffRetiradaProcesso) {
         if (ponteiroListRetiradaProcesso != NULL) {
             printInPrincipalScreen("Retirada de dados de processo desbloqueada");
             do {
                 if (ponteiroListRetiradaProcesso->info.length() == 46) {
                     if (removerDado(ponteiroListRetiradaProcesso->info)) {
-                        std::cout << "Processo retirado   -> " << ponteiroListRetiradaProcesso->info << std::endl;
+                        if (bWriteFile2 == 0) {
+                            hCreateFile2 = CreateFile(
+                                L"\\\\.\\mailslot\\TAREFASCADA",
+                                GENERIC_READ | GENERIC_WRITE,
+                                0,
+                                NULL,
+                                OPEN_EXISTING,
+                                FILE_ATTRIBUTE_NORMAL,
+                                NULL
+                            );
+                        }
+                        char stringProcesso[64];
+                        int caracter;
+                        for (caracter = 0; caracter < ponteiroListRetiradaProcesso->info.length(); caracter++) {
+                            stringProcesso[caracter] = ponteiroListRetiradaProcesso->info[caracter];
+                        }
+                        stringProcesso[caracter] = '\0';
+                        strcpy(szWriteFileBuffer2, stringProcesso);
+                        bWriteFile2 = WriteFile(
+                            hCreateFile2,
+                            szWriteFileBuffer2,
+                            dwWriteFileBufferSize2,
+                            &dwNoBytesWrite2,
+                            NULL
+                        );
                     }
                 }
 
@@ -729,6 +770,7 @@ void* retiradaDadosProcesso() {
         }
         onOffRetiradaProcesso = DESATIVADO;
     }
+    CloseHandle(hCreateFile2);
 
     // O comando "return" abaixo é desnecessário, mas presente aqui para compatibilidade
     // com o Visual Studio da Microsoft
