@@ -121,7 +121,6 @@ int main(int argc, char* argv[]) {
     hEventExibicaoOtimizacao = CreateEvent(NULL, FALSE, FALSE, L"Evento exibição de dados de otimização");
     hEventExibicaoProcesso = CreateEvent(NULL, FALSE, FALSE, L"Evento exibição de dados de processo");
     hEventExibicaoAlarmes = CreateEvent(NULL, FALSE, FALSE, L"Evento exibição de alarmes");
-    /*hEventLimpaConsole = CreateEvent(NULL, FALSE, FALSE, L"Evento de limpar o console"); */
     hEventEsc = CreateEvent(NULL, FALSE, FALSE, L"EscEvento");
 
     for (int i = 0; i < 3; i++) {
@@ -986,7 +985,7 @@ void* exibicaoAlarme() {
 }
 
 void* limpaJanelaConsoleExibicaoAlarmes() {
-    printInPrincipalScreen("Comando de limpar tela de alarmes enviado!");
+    printInPrincipalScreen("O comando de limpar a tela deve ser inserido na tela de alarmes!");
 
     // O comando "return" abaixo é desnecessário, mas presente aqui para compatibilidade
     // com o Visual Studio da Microsoft
