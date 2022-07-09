@@ -92,8 +92,8 @@ DWORD WINAPI WaitExibicaoAlarmesEvent(LPVOID id) {
     HANDLE handleDiscFile;
     char buffer[1023] = "";
     std::string previousBuffer = "";
-    FILE* input = fopen("C:\\Users\\CMNan\\source\\repos\\Industria_Extracao_Petroleo\\ProcessExibicaoOtimizacao\\ExibicaoOtimizacao.txt", "w");
-    handleDiscFile = CreateFile(L"C:\\Users\\CMNan\\source\\repos\\Industria_Extracao_Petroleo\\ProcessExibicaoOtimizacao\\ExibicaoOtimizacao.txt",
+    FILE* input = fopen(".\\ProcessExibicaoOtimizacao\\ExibicaoOtimizacao.txt", "w");
+    handleDiscFile = CreateFile(L".\\ProcessExibicaoOtimizacao\\ExibicaoOtimizacao.txt",
         GENERIC_READ | GENERIC_WRITE,
         FILE_SHARE_READ | FILE_SHARE_WRITE,
         NULL,
@@ -120,7 +120,7 @@ DWORD WINAPI WaitExibicaoAlarmesEvent(LPVOID id) {
         
         previousBuffer = buffer;
         if (quant >= 25) {
-            handleDiscFile = CreateFile(L"C:\\Users\\CMNan\\source\\repos\\Industria_Extracao_Petroleo\\ProcessExibicaoOtimizacao\\ExibicaoOtimizacao.txt",
+            handleDiscFile = CreateFile(L".\\ProcessExibicaoOtimizacao\\ExibicaoOtimizacao.txt",
                 GENERIC_READ | GENERIC_WRITE,
                 FILE_SHARE_READ | FILE_SHARE_WRITE,
                 NULL,

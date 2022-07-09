@@ -683,8 +683,8 @@ void* retiradaDadosOtimizacao() {
     char szWriteFileBuffer[42];
     DWORD dwNoBytesWrite;
     Sleep(1000);
-    FILE* input = fopen("C:\\Users\\CMNan\\source\\repos\\Industria_Extracao_Petroleo\\ProcessExibicaoOtimizacao\\ExibicaoOtimizacao.txt", "w");
-    hCreateFileDisc = CreateFile(L"C:\\Users\\CMNan\\source\\repos\\Industria_Extracao_Petroleo\\ProcessExibicaoOtimizacao\\ExibicaoOtimizacao.txt",
+    FILE* input = fopen(".\\ProcessExibicaoOtimizacao\\ExibicaoOtimizacao.txt", "w");
+    hCreateFileDisc = CreateFile(L".\\ProcessExibicaoOtimizacao\\ExibicaoOtimizacao.txt",
         GENERIC_READ | GENERIC_WRITE,
         FILE_SHARE_READ | FILE_SHARE_WRITE,
         NULL,
