@@ -30,6 +30,10 @@ HANDLE hEventEsc;
 int onOffExibicao = ATIVADO;
 
 DWORD WINAPI WaitExibicaoAlarmesEvent(LPVOID);
+void split(std::string str, char separator);
+
+std::string strings[8];
+bool isFirstTime = TRUE;
 
 int main()
 {
@@ -39,8 +43,7 @@ int main()
     DWORD dwExitCode = 0;
     DWORD dwRet;
     char caractereDigitado;
-
-
+    
     hEventExibicaoAlarmes = CreateEvent(NULL, FALSE, FALSE, L"Evento exibição de dados de otimização");
     hEventEsc = CreateEvent(NULL, FALSE, FALSE, L"EscEvento");
 
@@ -80,25 +83,84 @@ int main()
 
 DWORD WINAPI WaitExibicaoAlarmesEvent(LPVOID id) {
     HANDLE Events[2] = { hEventExibicaoAlarmes, hEventEsc };
+    std::string inicio, inicioAnterior;
+    int codeOfPreviousOtimizationPrintedInConsole = 0;
     DWORD ret;
+    DWORD dwordStatus;
+    DWORD dwordBytesLidos;
     int nTipoEvento;
-
+    HANDLE handleDiscFile;
+    char buffer[1023] = "";
+    std::string previousBuffer = "";
+    FILE* input = fopen("C:\\Users\\CMNan\\source\\repos\\Industria_Extracao_Petroleo\\ProcessExibicaoOtimizacao\\ExibicaoOtimizacao.txt", "w");
+    handleDiscFile = CreateFile(L"C:\\Users\\CMNan\\source\\repos\\Industria_Extracao_Petroleo\\ProcessExibicaoOtimizacao\\ExibicaoOtimizacao.txt",
+        GENERIC_READ | GENERIC_WRITE,
+        FILE_SHARE_READ | FILE_SHARE_WRITE,
+        NULL,
+        OPEN_EXISTING,
+        FILE_ATTRIBUTE_NORMAL,
+        NULL
+    );
+    int quant = 0;
     do {
-        ret = WaitForMultipleObjects(2, Events, FALSE, INFINITE);
-        nTipoEvento = ret - WAIT_OBJECT_0;
-        if (onOffExibicao == DESATIVADO && ret == 0) {
-            std::cout << "Thread " << id << " de exibicao de dados de processo esta desbloqueada!" << std::endl;
-            onOffExibicao = ATIVADO;
+        ret = WaitForMultipleObjects(2, Events, FALSE, 1000);
+        dwordStatus = ReadFile(handleDiscFile, &buffer, sizeof(buffer), &dwordBytesLidos, NULL);
+        if (buffer != previousBuffer) {
+            split(buffer, '|');
+            if (codeOfPreviousOtimizationPrintedInConsole < stoi(strings[0])) {
+                std::string saida = "NSEQ:" + strings[0] + " SP (TEMP):" + strings[3] + "C SP (PRE):" + strings[2] + "psi VOL:" + strings[4] + "m3 " + strings[5];
+                std::cout << saida << std::endl;
+                codeOfPreviousOtimizationPrintedInConsole = stoi(strings[0]);
+                quant++;
+            }
         }
-        else if (ret == 0) {
-            std::cout << "Thread " << id << " de exibicao de dados de processo foi bloqueada! Aguardando desbloqueamento" << std::endl;
-            onOffExibicao = DESATIVADO;
+        else {
+            quant++;
         }
-    } while (nTipoEvento == 0);
-
+        
+        previousBuffer = buffer;
+        if (quant >= 25) {
+            handleDiscFile = CreateFile(L"C:\\Users\\CMNan\\source\\repos\\Industria_Extracao_Petroleo\\ProcessExibicaoOtimizacao\\ExibicaoOtimizacao.txt",
+                GENERIC_READ | GENERIC_WRITE,
+                FILE_SHARE_READ | FILE_SHARE_WRITE,
+                NULL,
+                OPEN_EXISTING,
+                FILE_ATTRIBUTE_NORMAL,
+                NULL
+            );
+            quant = 0;
+        }
+    } while (ret != 0);
+    
     std::cout << "Thread " << id << " terminando" << std::endl;
 
     _endthreadex(0);
 
     return (0);
+}
+
+int len(std::string str) {
+    int length = 0;
+
+    for (int i = 0; str[i] != '\0'; i++) {
+        length++;
+    }
+
+    return length;
+}
+
+void split(std::string str, char separator) {
+    int currIndex = 0, i = 0, startIndex = 0, endIndex = 0;
+
+    while (i <= len(str)) {
+        if (str[i] == separator || i == len(str)) {
+            endIndex = i;
+            std::string subStr = "";
+            subStr.append(str, startIndex, endIndex - startIndex);
+            strings[currIndex] = subStr;
+            currIndex += 1;
+            startIndex = endIndex + 1;
+        }
+        i++;
+    }
 }

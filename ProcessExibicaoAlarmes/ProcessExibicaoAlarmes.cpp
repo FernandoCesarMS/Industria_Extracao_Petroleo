@@ -34,6 +34,7 @@ DWORD WINAPI WaitExibicaoAlarmesEvent(LPVOID);
 void split(std::string str, char separator);
 template<typename ... Args>
 std::string string_format(const std::string& format, Args ... args);
+std::string getAlarmText();
 
 int main()
 {
@@ -111,7 +112,7 @@ DWORD WINAPI WaitExibicaoAlarmesEvent(LPVOID id) {
             NULL
         );
         split(szReadFileBuffer, '|');
-        std::string texto = "TEXTOTEXTOTEXTOTEXTOTEXTOTEXTOTEXTO";
+        std::string texto = getAlarmText();
         std::string saida = strings[4] + " NSEQ: " + strings[0] + " " + texto + " PRI: " + strings[3];
         ret = WaitForMultipleObjects(2, Events, FALSE, 1000);
         std::cout << saida << std::endl;
@@ -119,6 +120,24 @@ DWORD WINAPI WaitExibicaoAlarmesEvent(LPVOID id) {
     CloseHandle(hSlots);
 
     return (0);
+}
+std::string getAlarmText() {
+    std::string alarms[10] = {
+        "VARIACAO NA GRAVIDADE               ",
+        "MUDANCA NO CAMPO MAGNETICO          ",
+        "PRESENCA DE HIDROCARBONETO DETECTADA",
+        "VARIACAO IDENTIFICADA GRAVIMETRO    ",
+        "PULSO DE AR DISPARADO PELO HIDROFONE",
+        "MAGNETOMETRO DESCALIBRADO           ",
+        "DEFEITO NO SISMOLOGO                ",
+        "INSTABILIDADE NA TORRE DE PERFURACAO",
+        "PETROLEO ENCONTRADO                 ",
+        "JAZIDA DE PETROLEO ESVAZIADA        "
+    };
+    srand((unsigned)time(NULL));
+    int randomNumber = rand() % 10;
+
+    return alarms[randomNumber];
 }
 
 int len(std::string str) {

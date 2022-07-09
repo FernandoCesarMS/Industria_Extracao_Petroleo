@@ -108,8 +108,8 @@ DWORD WINAPI WaitExibicaoSCADAEvent(LPVOID id) {
             NULL
         );
         split(szReadFileBuffer, '|');
-        std::string saida = strings[6] + " NSEQ:" + strings[0] + "  PR (T):" + strings[2] + "psi TEMP:" + strings[3] + "C PR (G):" + strings[4] + "psi NIVEL:" + strings[5] + "cm";
-        ret = WaitForMultipleObjects(2, Events, FALSE, 1000);
+        std::string saida = strings[6] + " NSEQ:" + strings[0] + "  PR(T):" + strings[2] + "psi TEMP:" + strings[3] + "C PR(G):" + strings[4] + "psi NIVEL:" + strings[5] + "cm";
+        ret = WaitForMultipleObjects(2, Events, FALSE, 500);
         std::cout << saida << std::endl;
     } while (ret != 0);
 

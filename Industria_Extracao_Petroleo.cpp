@@ -71,7 +71,7 @@ int onOffComunicacao = ATIVADO;
 int onOffRetiradaOtimizacao = ATIVADO;
 int onOffRetiradaProcesso = ATIVADO;
 int onOffRetiradaAlarme = ATIVADO;
-int onOffExibicaoOtimizacao = DESATIVADO;
+int onOffExibicaoOtimizacao = ATIVADO;
 int onOffExibicaoProcesso = ATIVADO;
 int onOffExibicaoAlarmes = ATIVADO;
 int onOffLimpaConsole = ATIVADO;
@@ -352,7 +352,7 @@ DWORD WINAPI WaitComunicacaoEvent(LPVOID id) {
             if (listSize == 1) memoriaRAM = NULL;
             comunicacaoAlarme(id);
         }
-            
+        std::cout << listSize << std::endl;
         printInPrincipalScreen(string_format("Thread %d de comunicacao foi bloqueada! Aguardando desbloqueamento", id));
         ret = WaitForMultipleObjects(2, Events, FALSE, INFINITE);
         nTipoEvento = ret - WAIT_OBJECT_0;
@@ -680,7 +680,19 @@ bool removerDado(std::string data) {
 
 void* retiradaDadosOtimizacao() {
     DWORD ret;
+    HANDLE hCreateFileDisc;
+    char szWriteFileBuffer[42];
+    DWORD dwNoBytesWrite;
     Sleep(1000);
+    FILE* input = fopen("C:\\Users\\CMNan\\source\\repos\\Industria_Extracao_Petroleo\\ProcessExibicaoOtimizacao\\ExibicaoOtimizacao.txt", "w");
+    hCreateFileDisc = CreateFile(L"C:\\Users\\CMNan\\source\\repos\\Industria_Extracao_Petroleo\\ProcessExibicaoOtimizacao\\ExibicaoOtimizacao.txt",
+        GENERIC_READ | GENERIC_WRITE,
+        FILE_SHARE_READ | FILE_SHARE_WRITE,
+        NULL,
+        OPEN_EXISTING,
+        FILE_ATTRIBUTE_NORMAL,
+        NULL
+    );
     struct Node* ponteiroListRetiradaOtimizacao = memoriaRAM;
     if (onOffRetiradaOtimizacao) {
         if (ponteiroListRetiradaOtimizacao != NULL) {
@@ -689,7 +701,25 @@ void* retiradaDadosOtimizacao() {
                 if (ponteiroListRetiradaOtimizacao->info.length() == 38) {
                     if (removerDado(ponteiroListRetiradaOtimizacao->info)) {
                         adicionaFinalRetirada(ponteiroListRetiradaOtimizacao->info);
-                        std::cout << "Otimizacao retirada -> " << ponteiroListRetiradaOtimizacao->info << std::endl;
+                        char stringProcesso[42];
+                        int caracter;
+                        for (int iii = 0; iii < 42; iii++) {
+                            stringProcesso[iii] = '\0';
+                            szWriteFileBuffer[iii] = '\0';
+                        }
+                        for (caracter = 0; caracter < ponteiroListRetiradaOtimizacao->info.length(); caracter++) {
+                            stringProcesso[caracter] = ponteiroListRetiradaOtimizacao->info[caracter];
+                        }
+                        stringProcesso[caracter] = '\0';
+                        stringProcesso[caracter+1] = '\n';
+                        strcpy(szWriteFileBuffer, stringProcesso);
+                        int status = WriteFile(
+                            hCreateFileDisc,
+                            &szWriteFileBuffer,
+                            sizeof(szWriteFileBuffer),
+                            &dwNoBytesWrite,
+                            NULL
+                        );
                     }
                 }
 
@@ -836,7 +866,6 @@ void* retiradaAlarme() {
                 if (ponteiroListRetiradaAlarme->next != memoriaRAM) {
                     ponteiroListRetiradaAlarme = ponteiroListRetiradaAlarme->next;
                 }
-
                 ret = WaitForSingleObject(hEventRetiradaAlarmes, 500);
             } while (ret == (DWORD)258 && listSize > 0);
         }
